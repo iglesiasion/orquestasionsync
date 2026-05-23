@@ -18,9 +18,9 @@
         .sheet-zoom { transition: transform 0.2s ease-out; transform-origin: center center; }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col overflow-hidden select-none">
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col overflow-x-hidden lg:overflow-hidden select-none">
 
-    <header class="bg-slate-900 border-b border-slate-800 h-16 px-6 flex items-center justify-between z-30">
+    <header class="bg-slate-900 border-b border-slate-800 h-16 px-6 flex items-center justify-between z-30 flex-shrink-0">
         <div class="flex items-center gap-3">
             <button id="btnDirectorMenu" onclick="toggleDirectorMenu()" class="hidden p-2 bg-slate-800 hover:bg-slate-755 border border-slate-700 rounded-xl transition">
                 <i data-lucide="menu" class="w-5 h-5 text-indigo-400"></i>
@@ -124,7 +124,7 @@
         </div>
     </div>
 
-    <div id="directorPanel" class="hidden flex-grow grid grid-cols-1 lg:grid-cols-12 h-full overflow-y-auto lg:overflow-hidden relative no-scrollbar">
+    <div id="directorPanel" class="hidden flex-grow grid grid-cols-1 lg:grid-cols-12 overflow-y-auto lg:overflow-hidden relative no-scrollbar">
         <div id="directorSidebar" class="fixed top-16 left-0 bottom-0 z-35 w-80 bg-slate-900 border-r border-slate-800 p-5 flex flex-col gap-6 sidebar-transition -translate-x-full shadow-2xl">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
                 <h3 class="font-bold text-xs text-indigo-400 flex items-center gap-1.5 uppercase tracking-wider">
@@ -153,7 +153,7 @@
         </div>
 
         <div id="directorActiveServiceView" class="lg:col-span-12 grid grid-cols-1 lg:grid-cols-12 h-full">
-            <div class="lg:col-span-4 bg-slate-950 border-r border-slate-800 flex flex-col h-auto lg:h-full overflow-hidden">
+            <div class="lg:col-span-4 bg-slate-950 border-r border-slate-800 flex flex-col h-auto lg:h-full">
                 <div class="p-4 border-b border-slate-800 bg-slate-900/40">
                     <h3 class="font-black text-xs text-white flex items-center gap-1.5 uppercase tracking-wider">
                         <i data-lucide="calendar" class="text-emerald-400 w-4 h-4"></i> Repertorio de este Domingo
@@ -161,7 +161,7 @@
                     <p class="text-[9px] text-slate-500 mt-1">Solo los himnos seleccionados para el servicio de hoy</p>
                 </div>
 
-                <div id="sundaySetlist" class="flex-grow overflow-y-auto p-4 space-y-2.5 no-scrollbar max-h-[380px] lg:max-h-[calc(100vh-250px)]">
+                <div id="sundaySetlist" class="overflow-y-auto p-4 space-y-2.5 no-scrollbar max-h-[320px] lg:max-h-[calc(100vh-260px)]">
                 </div>
 
                 <div class="p-4 border-t border-slate-800 bg-slate-900/20 space-y-3 mt-auto">
@@ -186,7 +186,7 @@
                 </div>
             </div>
 
-            <div class="lg:col-span-8 flex flex-col bg-slate-900/20 p-6 overflow-y-auto lg:overflow-y-auto h-auto lg:h-full no-scrollbar">
+            <div class="lg:col-span-8 flex flex-col bg-slate-900/20 p-6 h-auto lg:h-full">
                 <div class="flex-grow flex flex-col h-full">
                     <div class="flex justify-between items-start mb-6">
                         <div>
@@ -196,7 +196,7 @@
                         </div>
                     </div>
 
-                    <div id="liveVerseControlList" class="flex-grow grid grid-cols-1 md:grid-cols-2 gap-3.5 pr-1 pb-12 lg:pb-4 align-content-start">
+                    <div id="liveVerseControlList" class="grid grid-cols-1 md:grid-cols-2 gap-3.5 pr-1 pb-16 align-content-start">
                     </div>
                 </div>
             </div>
