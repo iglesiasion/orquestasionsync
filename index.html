@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OrquestaSIONsync v7.0 - Panel Profesional</title>
+    <title>OrquestaSIONsync v7.1 - Panel Profesional</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -30,7 +30,7 @@
                     <i data-lucide="radio" class="w-5 h-5"></i>
                 </div>
                 <div>
-                    <h1 class="text-sm font-black tracking-tight text-white">OrquestaSIONsync v7.0</h1>
+                    <h1 class="text-sm font-black tracking-tight text-white">OrquestaSIONsync v7.1</h1>
                     <p id="roomIndicator" class="text-[9px] text-slate-500 font-medium">Conectando al servidor...</p>
                 </div>
             </div>
@@ -148,7 +148,7 @@
                     <input type="text" id="librarySearchInput" oninput="buscarEnBiblioteca()" placeholder="Buscar himno..." class="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
                 </div>
                 <div id="libraryList" class="flex-grow overflow-y-auto space-y-1.5 pr-1 no-scrollbar">
-                </div>
+                    </div>
             </div>
         </div>
 
@@ -158,7 +158,7 @@
                     <h3 class="font-black text-xs text-white flex items-center gap-1.5 uppercase tracking-wider">
                         <i data-lucide="calendar" class="text-emerald-400 w-4 h-4"></i> Repertorio de este Domingo
                     </h3>
-                    <p class="text-[9px] text-slate-500 mt-1">Solo los himnos seleccionados para el servicio de hoy</p>
+                    <p class="text-[9px] text-slate-500 mt-1">Usa las flechas laterales para reordenar los cantos en tiempo real</p>
                 </div>
 
                 <div id="sundaySetlist" class="overflow-y-auto p-4 space-y-2.5 no-scrollbar max-h-[320px] lg:max-h-[calc(100vh-260px)]">
@@ -313,7 +313,7 @@
 
     <div id="projectorPanel" class="hidden flex-grow bg-black relative w-full h-full flex flex-col justify-center items-center p-8 select-none">
         <div class="absolute top-4 left-4 right-4 flex justify-between opacity-0 hover:opacity-100 transition-opacity z-50">
-            <span class="text-[9px] text-slate-750 font-bold">Proyector OrquestaSIONsync</span>
+            <span class="text-[9px] text-slate-755 font-bold">Proyector OrquestaSIONsync</span>
             <div class="flex gap-1">
                 <button onclick="cambiarTamañoProyector(-4)" class="px-2 py-1 bg-slate-900 border border-slate-800 text-slate-300 rounded text-[10px] hover:bg-slate-800">A-</button>
                 <button onclick="cambiarTamañoProyector(4)" class="px-2 py-1 bg-slate-900 border border-slate-800 text-slate-300 rounded text-[10px] hover:bg-slate-800">A+</button>
@@ -551,19 +551,32 @@
                 return;
             }
 
-            window.state.activeSet.forEach(id => {
+            window.state.activeSet.forEach((id, index) => {
                 const himno = window.state.songs[id];
                 if (!himno) return;
 
                 const isCurrentlyTransmitting = (id === window.state.liveState.songId);
 
                 const card = document.createElement('div');
-                card.className = `px-3 py-2 rounded-xl border transition flex justify-between items-center ${isCurrentlyTransmitting ? 'bg-indigo-600/10 border-indigo-500/40 text-white' : 'bg-slate-900 border-slate-850 hover:border-slate-800 text-slate-300'}`;
+                card.className = `px-3 py-2 rounded-xl border transition flex items-center justify-between gap-2 ${isCurrentlyTransmitting ? 'bg-indigo-600/10 border-indigo-500/40 text-white' : 'bg-slate-900 border-slate-850 hover:border-slate-800 text-slate-300'}`;
                 
                 card.innerHTML = `
-                    <div class="flex-grow min-w-0 pr-2">
+                    <!-- Controles de Reordenamiento -->
+                    <div class="flex flex-col gap-0.5 flex-shrink-0">
+                        <button onclick="moverCantoEnSetlist(${index}, -1)" class="p-0.5 hover:bg-slate-800 rounded text-slate-500 hover:text-indigo-400 transition ${index === 0 ? 'opacity-20 pointer-events-none' : ''}">
+                            <i data-lucide="chevron-up" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="moverCantoEnSetlist(${index}, 1)" class="p-0.5 hover:bg-slate-800 rounded text-slate-500 hover:text-indigo-400 transition ${index === window.state.activeSet.length - 1 ? 'opacity-20 pointer-events-none' : ''}">
+                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Información del Himno -->
+                    <div class="flex-grow min-w-0 pr-1">
                         <h4 class="font-bold text-xs truncate">${himno.titulo}</h4>
                     </div>
+                    
+                    <!-- Acciones -->
                     <div class="flex gap-1.5 flex-shrink-0">
                         <button onclick="transmitirHimno('${id}')" class="text-[9px] font-black px-3 py-1.5 rounded-lg transition ${isCurrentlyTransmitting ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg' : 'bg-indigo-600/10 hover:bg-indigo-600 text-indigo-400 hover:text-white'}">
                             ${isCurrentlyTransmitting ? 'AL AIRE' : 'TRANSMITIR'}
@@ -574,6 +587,21 @@
                     </div>`;
                 container.appendChild(card);
             });
+        }
+
+        function moverCantoEnSetlist(posicionActual, direccion) {
+            const nuevaPosicion = posicionActual + direccion;
+            
+            // Validar límites de la lista
+            if (nuevaPosicion < 0 || nuevaPosicion >= window.state.activeSet.length) return;
+            
+            // Intercambiar elementos localmente
+            const elemento = window.state.activeSet.splice(posicionActual, 1)[0];
+            window.state.activeSet.splice(nuevaPosicion, 0, elemento);
+            
+            // Sincronizar inmediatamente a Firebase
+            guardarEstadoEnServidor();
+            mostrarToast("Lista reordenada exitosamente");
         }
 
         function renderDirectorBiblioteca() {
