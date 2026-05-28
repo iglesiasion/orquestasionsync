@@ -154,12 +154,15 @@
 
         <div id="directorActiveServiceView" class="lg:col-span-12 grid grid-cols-1 lg:grid-cols-12 h-full">
             <div class="lg:col-span-4 bg-slate-950 border-r border-slate-800 flex flex-col h-auto lg:h-full">
-                <div class="p-4 border-b border-slate-800 bg-slate-900/40">
-                    <h3 class="font-black text-xs text-white flex items-center gap-1.5 uppercase tracking-wider">
-                        <i data-lucide="calendar" class="text-emerald-400 w-4 h-4"></i> Repertorio de este Domingo
-                    </h3>
-                    <p class="text-[9px] text-slate-500 mt-1">Usa las flechas laterales para reordenar los cantos en tiempo real</p>
-                </div>
+<div class="p-4 border-b border-slate-800 bg-slate-900/40">
+    <div class="flex justify-between items-center">
+        <h3 class="font-black text-xs text-white flex items-center gap-1.5 uppercase tracking-wider">
+            <i data-lucide="calendar" class="text-emerald-400 w-4 h-4"></i> Repertorio de este Domingo
+        </h3>
+        <button onclick="limpiarTodaLaLista()" class="text-[9px] font-bold text-red-400 hover:text-red-300 underline uppercase">Limpiar todo</button>
+    </div>
+    <p class="text-[9px] text-slate-500 mt-1">Usa las flechas laterales para reordenar los cantos en tiempo real</p>
+</div>
 
                 <div id="sundaySetlist" class="overflow-y-auto p-4 space-y-2.5 no-scrollbar max-h-[320px] lg:max-h-[calc(100vh-260px)]">
                 </div>
@@ -1001,6 +1004,12 @@
                 toast.className = "fixed bottom-6 right-6 z-55 transform translate-y-20 opacity-0 transition-all duration-300 bg-indigo-600 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2.5";
             }, 3000);
         }
-    </script>
+function limpiarTodaLaLista() {
+    if (confirm("¿Estás seguro de que deseas borrar toda la lista del repertorio de este domingo?")) {
+        window.state.activeSet = [];
+        guardarEstadoEnServidor();
+        mostrarToast("Lista limpiada correctamente");
+    }
+}    </script>
 </body>
 </html>
