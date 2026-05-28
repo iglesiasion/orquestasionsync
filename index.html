@@ -979,6 +979,11 @@ const listaInstrumentos = [
             if (activeRole !== 'projector') return;
 
             const container = document.getElementById('projectionText');
+            if (window.state.liveState.blackout) {
+                container.classList.add('blackout');
+            } else {
+                container.classList.remove('blackout');
+            }
             const liveState = window.state.liveState;
             const himno = window.state.songs[liveState.songId];
 
