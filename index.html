@@ -702,6 +702,34 @@ const listaInstrumentos = [
         }
 
         function renderMonitoresDirector() {
+            function toggleBlackout() {
+            isBlackout = !isBlackout;
+            const btn = document.getElementById('btnBlackout');
+            
+            // Cambiar apariencia del botón según el estado
+            btn.className = isBlackout ? 
+                "mt-2 w-full bg-red-600 animate-pulse border border-red-500 text-[10px] font-bold text-white px-3 py-3 rounded-xl transition" : 
+                "mt-2 w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] font-bold text-white px-3 py-3 rounded-xl transition";
+            
+            // Sincronizar estado en Firebase
+            db.ref(`orquesta_rooms/${roomCode}/blackout`).set(isBlackout);
+        }
+
+        // Escuchar cambios en tiempo real para aplicar el efecto a los proyectores
+        db.ref(`orquesta_rooms/${roomCode}/blackout`).on('value', (snap) => {
+            const blackout = snap.val();
+            if(activeRole === 'projector') {
+                const body = document.body;
+                const panel = document.getElementById('projectorPanel');
+                if(blackout) {
+                    body.classList.add('bg-black');
+                    panel.style.opacity = '0';
+                } else {
+                    body.classList.remove('bg-black');
+                    panel.style.opacity = '1';
+                }
+            }
+        });
             const monOrq = document.getElementById('monitorOrquesta');
             const monProy = document.getElementById('monitorProyector');
 
