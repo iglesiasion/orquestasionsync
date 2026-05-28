@@ -372,7 +372,8 @@ const listaInstrumentos = [
             activeSet: [],
             liveState: {
                 songId: "",
-                verseIndex: 0
+                verseIndex: 0,
+                blackout: false //
             }
         };
 
@@ -1017,6 +1018,11 @@ function limpiarTodaLaLista() {
         guardarEstadoEnServidor();
         mostrarToast("Lista limpiada correctamente");
     }
+ function toggleBlackout() {
+            window.state.liveState.blackout = !window.state.liveState.blackout;
+            mostrarToast(window.state.liveState.blackout ? "Pantallas en negro" : "Pantallas encendidas");
+            guardarEstadoEnServidor();
+        }   
 }    </script>
 </body>
 </html>
