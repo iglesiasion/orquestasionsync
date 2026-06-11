@@ -911,24 +911,33 @@ const listaInstrumentos = [
     if (activeRole !== 'musician') return;
 
     const waitBox = document.getElementById('musicianWaitText');
-    const contentWrapper = document.getElementById('musicianContentWrapper'); // El nuevo padre
+    const contentWrapper = document.getElementById('musicianContentWrapper');
     const singleImg = document.getElementById('musicianSheetImg');
     const libreScroll = document.getElementById('musicianLibreScroll');
+    const musicianPanel = document.getElementById('musicianPanel');
+
+    // Aseguramos que el panel principal esté visible
+    musicianPanel.classList.remove('hidden');
 
     if (isMusicianSyncMode) {
-        // --- MODO DIRECTOR (Sincronizado) ---
+        // --- MODO DIRECTOR ---
         contentWrapper.classList.remove('hidden');
+        singleImg.classList.remove('hidden');
         libreScroll.classList.add('hidden');
         
         const himno = window.state.songs[window.state.liveState.songId];
         
         if (himno && himno.urlsInstrumentos && himno.urlsInstrumentos[selectedInstrument]) {
             waitBox.classList.add('hidden');
-            singleImg.classList.remove('hidden');
             singleImg.src = himno.urlsInstrumentos[selectedInstrument];
         } else {
             singleImg.classList.add('hidden');
             waitBox.classList.remove('hidden');
+            waitBox.innerHTML = `
+                <i data-lucide="music-3" class="w-16 h-16 text-slate-800 mx-auto mb-4 animate-bounce"></i>
+                <p class="font-bold text-slate-400 text-lg">Atril Virtual Activo</p>
+                <p class="text-xs text-slate-600 mt-2">Esperando partitura de: <strong class="text-emerald-400">${selectedInstrument}</strong></p>
+            `;
         }
     } else {
         // --- MODO LIBRE (Libro Infinito) ---
@@ -936,19 +945,23 @@ const listaInstrumentos = [
         singleImg.classList.add('hidden');
         contentWrapper.classList.remove('hidden');
         libreScroll.classList.remove('hidden');
-        libreScroll.innerHTML = ''; // Limpiamos la lista anterior
+        libreScroll.innerHTML = ''; 
 
-        // Recorremos todo el repertorio del domingo
+        if (window.state.activeSet.length === 0) {
+            libreScroll.innerHTML = `<p class="text-center text-slate-500 mt-10">No hay himnos en el repertorio del domingo.</p>`;
+        }
+
         window.state.activeSet.forEach(id => {
             const himno = window.state.songs[id];
             if (himno && himno.urlsInstrumentos && himno.urlsInstrumentos[selectedInstrument]) {
                 const img = document.createElement('img');
                 img.src = himno.urlsInstrumentos[selectedInstrument];
-                img.className = "w-full mb-12 border-b-4 border-slate-800 pb-12"; // Partitura + espacio
+                img.className = "w-full mb-12 border-b-4 border-slate-800 pb-12";
                 libreScroll.appendChild(img);
             }
         });
     }
+    lucide.createIcons(); // Recargar iconos
 }
 
         function cambiarZoom(amount) {
