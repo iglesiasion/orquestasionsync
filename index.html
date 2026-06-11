@@ -8,7 +8,12 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <style>
+  
+<style>
+        /* Estilo para las tarjetas de himnos en el menú del músico */
+        .himno-card-img { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 2px solid transparent; }
+        .himno-card-img:hover { border-color: #6366f1; }
+
         /* Ocultar barras de scroll visuales pero mantener funcional el desplazamiento */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -126,7 +131,7 @@
     </div>
 
     <div id="directorPanel" class="hidden flex-grow grid grid-cols-1 lg:grid-cols-12 overflow-y-auto lg:overflow-hidden relative no-scrollbar">
-        <div id="directorSidebar" class="fixed top-16 left-0 bottom-0 z-35 w-80 bg-slate-900 border-r border-slate-800 p-5 flex flex-col gap-6 sidebar-transition -translate-x-full shadow-2xl">
+        <div id="directorSidebar" class="fixed top-16 left-0 bottom-0 z-50 w-80 bg-slate-900 border-r border-slate-800 p-5 flex flex-col gap-6 sidebar-transition -translate-x-full shadow-2xl">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
                 <h3 class="font-bold text-xs text-indigo-400 flex items-center gap-1.5 uppercase tracking-wider">
                     <i data-lucide="library" class="w-4 h-4"></i> Biblioteca e Ingreso
@@ -875,35 +880,33 @@ const listaInstrumentos = [
         }
 
         function generarListaMusicoManual() {
-            const container = document.getElementById('musicianManualList');
-            container.innerHTML = '';
-            
-            const ids = Object.keys(window.state.songs);
-            if (ids.length === 0) {
-                container.innerHTML = `<p class="text-[9px] text-slate-600 text-center py-2">Sin himnos cargados</p>`;
-                return;
-            }
+    const container = document.getElementById('musicianManualList');
+    container.innerHTML = '';
+    
+    const ids = Object.keys(window.state.songs);
+    if (ids.length === 0) {
+        container.innerHTML = `<p class="text-[9px] text-slate-600 text-center py-2">Sin himnos cargados</p>`;
+        return;
+    }
 
-            ids.forEach(id => {
-                const himno = window.state.songs[id];
-                const btn = document.createElement('button');
-                
-                if (!isMusicianSyncMode && manualSelectedSongId === id) {
-                    btn.className = "w-full text-left text-[10px] p-1.5 bg-emerald-950/40 border border-emerald-900/30 rounded text-emerald-400 font-bold transition truncate";
-                } else {
-                    btn.className = "w-full text-left text-[10px] p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white transition truncate";
-                }
-                
-                btn.textContent = himno.titulo;
-                btn.onclick = () => {
-                    manualSelectedSongId = id;
-                    generarListaMusicoManual(); 
-                    renderMusicoPantalla();
-                    mostrarToast(`Mostrando: ${himno.titulo}`);
-                };
-                container.appendChild(btn);
-            });
-        }
+    ids.forEach(id => {
+        const himno = window.state.songs[id];
+        // Intentamos obtener la primera imagen de partitura para mostrarla
+        const primeraUrl = (himno.urlsInstrumentos && Object.keys(himno.urlsInstrumentos).length > 0) 
+                       ? Object.values(himno.urlsInstrumentos)[0] : '';
+        
+        const card = document.createElement('div');
+        card.className = `p-2 rounded-xl border transition mb-3 ${manualSelectedSongId === id ? 'bg-emerald-950/40 border-emerald-500' : 'bg-slate-900 border-slate-800'}`;
+        
+        card.innerHTML = `
+            ${primeraUrl ? `<img src="${primeraUrl}" class="himno-card-img mb-2" onclick="seleccionarHimnoMusico('${id}')">` : 
+                           `<div class="w-full h-24 bg-slate-800 flex items-center justify-center mb-2 rounded-lg cursor-pointer" onclick="seleccionarHimnoMusico('${id}')"><i data-lucide="music" class="w-8 h-8 text-slate-600"></i></div>`}
+            <p class="text-[10px] font-bold text-center truncate text-slate-200">${himno.titulo}</p>
+        `;
+        container.appendChild(card);
+    });
+    lucide.createIcons();
+}
 
         function renderMusicoPantalla() {
             if (activeRole !== 'musician') return;
@@ -1029,6 +1032,12 @@ function limpiarTodaLaLista() {
             mostrarToast(window.state.liveState.blackout ? "Pantallas en negro" : "Pantallas encendidas");
             guardarEstadoEnServidor();
         }   
-</script>
+        function seleccionarHimnoMusico(id) {
+            manualSelectedSongId = id;
+            generarListaMusicoManual(); 
+            renderMusicoPantalla();
+            mostrarToast(`Seleccionado: ${window.state.songs[id].titulo}`);
+        }
+    </script>
 </body>
 </html>
