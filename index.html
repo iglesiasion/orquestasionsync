@@ -454,7 +454,12 @@ const listaInstrumentos = [
                     window.state.activeSet = data.activeSet || [];
                     window.state.liveState = data.liveState || { songId: "", verseIndex: 0 };
                     
-                    renderApp();
+                    renderApp(); 
+                    
+                    // --- ESTA ES LA LÍNEA QUE FALTA ---
+                    if (activeRole === 'projector') {
+                        renderProyectorPantalla();
+                    }
                 } else {
                     guardarEstadoEnServidor();
                 }
