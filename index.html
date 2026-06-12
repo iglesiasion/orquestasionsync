@@ -447,25 +447,20 @@ const listaInstrumentos = [
         function escucharServidor() {
             if (!db || !roomCode) return;
 
-            db.ref(`orquesta_rooms/${roomCode}`).on("value", (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    window.state.songs = data.songs || {};
-                    window.state.activeSet = data.activeSet || [];
-                    window.state.liveState = data.liveState || { songId: "", verseIndex: 0 };
-                    
-                    renderApp(); 
-                    
-                    // --- ESTA ES LA LÍNEA QUE FALTA ---
-                    if (activeRole === 'projector') {
-                        renderProyectorPantalla();
-                    }
-                } else {
-                    guardarEstadoEnServidor();
-                }
-            }, (error) => {
-                console.error("Error en conexión:", error);
-            });
+           db.ref(`orquesta_rooms/${roomCode}`).on("value", (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+        window.state.songs = data.songs || {};
+        window.state.activeSet = data.activeSet || [];
+        window.state.liveState = data.liveState || { songId: "", verseIndex: 0, blackout: false };
+        
+        // --- AQUÍ ESTÁ EL CAMBIO ---
+        renderApp();
+        if (activeRole === 'projector') {
+            renderProyectorPantalla();
+        }
+    }
+});
         }
 
         function guardarEstadoEnServidor() {
@@ -1050,10 +1045,16 @@ function limpiarTodaLaLista() {
     }
 }
  function toggleBlackout() {
-            window.state.liveState.blackout = !window.state.liveState.blackout;
-            mostrarToast(window.state.liveState.blackout ? "Pantallas en negro" : "Pantallas encendidas");
-            guardarEstadoEnServidor();
-        }   
+    // Invertir el valor en la variable local
+    window.state.liveState.blackout = !window.state.liveState.blackout;
+    
+    // Forzar la actualización inmediata en Firebase
+    db.ref(`orquesta_rooms/${roomCode}/liveState`).update({
+        blackout: window.state.liveState.blackout
+    });
+
+    mostrarToast(window.state.liveState.blackout ? "Pantalla en Negro ACTIVA" : "Pantalla en Negro DESACTIVADA");
+}  
         function seleccionarHimnoMusico(id) {
             manualSelectedSongId = id;
             generarListaMusicoManual(); 
