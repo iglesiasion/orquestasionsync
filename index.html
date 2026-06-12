@@ -21,7 +21,7 @@
         /* Animaciones */
         .sidebar-transition { transition: transform 0.3s ease-in-out; }
         .sheet-zoom { transition: transform 0.2s ease-out; transform-origin: center center; }
-        .blackout { background-color: #000 !important; opacity: 0 !important; }
+        .blackout { background-color: #000 !important; opacity: 0 !important; transition: opacity 0.5s; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col overflow-x-hidden lg:overflow-hidden select-none">
@@ -447,20 +447,24 @@ const listaInstrumentos = [
         function escucharServidor() {
             if (!db || !roomCode) return;
 
-           db.ref(`orquesta_rooms/${roomCode}`).on("value", (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-        window.state.songs = data.songs || {};
-        window.state.activeSet = data.activeSet || [];
-        window.state.liveState = data.liveState || { songId: "", verseIndex: 0, blackout: false };
-        
-        // --- AQUÍ ESTÁ EL CAMBIO ---
-        renderApp();
-        if (activeRole === 'projector') {
-            renderProyectorPantalla();
-        }
-    }
-});
+            db.ref(`orquesta_rooms/${roomCode}`).on("value", (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    window.state.songs = data.songs || {};
+                    window.state.activeSet = data.activeSet || [];
+                    // Si el estado en Firebase viene vacío, le damos un valor inicial
+                    window.state.liveState = data.liveState || { songId: "", verseIndex: 0, blackout: false };
+                    
+                    renderApp(); // Esto renderiza lo que el director ve
+                    
+                    // --- ESTA LÍNEA ES LA QUE OBLIGA AL PROYECTOR A ACTUALIZARSE ---
+                    if (activeRole === 'projector') {
+                        renderProyectorPantalla();
+                    }
+                }
+            }, (error) => {
+                console.error("Error en conexión:", error);
+            });
         }
 
         function guardarEstadoEnServidor() {
@@ -983,38 +987,35 @@ const listaInstrumentos = [
         }
 
 
-        // ==================== OPERACIONES DEL PROYECTOR ====================
+// ==================== OPERACIONES DEL PROYECTOR ====================
         function renderProyectorPantalla() {
-    if (activeRole !== 'projector') return;
+            if (activeRole !== 'projector') return;
 
-    const container = document.getElementById('projectionText');
-    const panel = document.getElementById('projectorPanel');
-    
-    // Forzamos visibilidad
-    panel.classList.remove('hidden');
+            const container = document.getElementById('projectionText');
+            const panel = document.getElementById('projectorPanel');
+            
+            // 1. Mostrar el panel
+            panel.classList.remove('hidden');
 
-    // Control estricto del Blackout
-    if (window.state.liveState.blackout === true) {
-        container.style.opacity = '0'; // Ocultar texto
-        container.style.visibility = 'hidden';
-        document.body.style.backgroundColor = 'black';
-    } else {
-        container.style.opacity = '1'; // Mostrar texto
-        container.style.visibility = 'visible';
-        document.body.style.backgroundColor = 'black';
-    }
+            // 2. Aplicar el blackout usando la clase CSS que ya tienes definida
+            if (window.state.liveState.blackout) {
+                container.classList.add('blackout');
+            } else {
+                container.classList.remove('blackout');
+            }
 
-    const liveState = window.state.liveState;
-    const himno = window.state.songs[liveState.songId];
+            // 3. Renderizar letra
+            const liveState = window.state.liveState;
+            const himno = window.state.songs[liveState.songId];
 
-    if (himno && himno.letra) {
-        const estrofas = himno.letra.split(/\n\s*\n/).map(e => e.trim());
-        container.textContent = estrofas[liveState.verseIndex] || '';
-        container.style.fontSize = `${currentProjectorFontSize}px`;
-    } else {
-        container.innerHTML = `<span class="text-slate-800 font-light italic text-4xl">Esperando transmisión...</span>`;
-    }
-}
+            if (himno && himno.letra) {
+                const estrofas = himno.letra.split(/\n\s*\n/).map(e => e.trim());
+                container.textContent = estrofas[liveState.verseIndex] || '';
+                container.style.fontSize = `${currentProjectorFontSize}px`;
+            } else {
+                container.innerHTML = `<span class="text-slate-800 font-light italic text-4xl">Esperando transmisión...</span>`;
+            }
+        }
 
         function cambiarTamañoProyector(amount) {
             currentProjectorFontSize += amount;
