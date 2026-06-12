@@ -508,11 +508,17 @@ const listaInstrumentos = [
         }
 
         function confirmarInstrumento() {
-            selectedInstrument = document.getElementById('instrumentSelector').value;
-            document.getElementById('musicianInstrumentSelector').value = selectedInstrument;
-            document.getElementById('musicianWaitLabel').textContent = selectedInstrument;
-            elegirRol('musician');
-        }
+    selectedInstrument = document.getElementById('instrumentSelector').value;
+    document.getElementById('musicianInstrumentSelector').value = selectedInstrument;
+    
+    // Añadimos este chequeo para evitar que el error de "null" detenga todo
+    const waitLabel = document.getElementById('musicianWaitLabel');
+    if (waitLabel) {
+        waitLabel.textContent = selectedInstrument;
+    }
+    
+    elegirRol('musician');
+}
 
         function salirAlMenuRoles() {
             activeRole = null;
