@@ -985,25 +985,36 @@ const listaInstrumentos = [
 
         // ==================== OPERACIONES DEL PROYECTOR ====================
         function renderProyectorPantalla() {
-            if (activeRole !== 'projector') return;
+    if (activeRole !== 'projector') return;
 
-            const container = document.getElementById('projectionText');
-            if (window.state.liveState.blackout) {
-                container.classList.add('blackout');
-            } else {
-                container.classList.remove('blackout');
-            }
-            const liveState = window.state.liveState;
-            const himno = window.state.songs[liveState.songId];
+    const container = document.getElementById('projectionText');
+    const panel = document.getElementById('projectorPanel');
+    
+    // Forzamos visibilidad
+    panel.classList.remove('hidden');
 
-            if (himno && himno.letra) {
-                const estrofas = himno.letra.split(/\n\s*\n/).map(e => e.trim());
-                container.textContent = estrofas[liveState.verseIndex] || '';
-                container.style.fontSize = `${currentProjectorFontSize}px`;
-            } else {
-                container.innerHTML = `<span class="text-slate-800 font-light italic text-4xl">OrquestaSIONsync Listo</span>`;
-            }
-        }
+    // Control estricto del Blackout
+    if (window.state.liveState.blackout === true) {
+        container.style.opacity = '0'; // Ocultar texto
+        container.style.visibility = 'hidden';
+        document.body.style.backgroundColor = 'black';
+    } else {
+        container.style.opacity = '1'; // Mostrar texto
+        container.style.visibility = 'visible';
+        document.body.style.backgroundColor = 'black';
+    }
+
+    const liveState = window.state.liveState;
+    const himno = window.state.songs[liveState.songId];
+
+    if (himno && himno.letra) {
+        const estrofas = himno.letra.split(/\n\s*\n/).map(e => e.trim());
+        container.textContent = estrofas[liveState.verseIndex] || '';
+        container.style.fontSize = `${currentProjectorFontSize}px`;
+    } else {
+        container.innerHTML = `<span class="text-slate-800 font-light italic text-4xl">Esperando transmisión...</span>`;
+    }
+}
 
         function cambiarTamañoProyector(amount) {
             currentProjectorFontSize += amount;
