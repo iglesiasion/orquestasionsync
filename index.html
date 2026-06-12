@@ -469,38 +469,38 @@ const listaInstrumentos = [
         }
 
         function elegirRol(role) {
-            console.log("Intentando entrar al rol: " + role);
-            activeRole = role;
-            
-            // 1. Escondemos TODO
-            document.getElementById('directorPanel').classList.add('hidden');
-            document.getElementById('musicianPanel').classList.add('hidden');
-            document.getElementById('projectorPanel').classList.add('hidden');
-            document.getElementById('roleScreen').classList.add('hidden');
-            document.getElementById('instrumentScreen').classList.add('hidden');
-            document.getElementById('setupScreen').classList.add('hidden');
+    console.log("Intentando entrar al rol: " + role);
+    activeRole = role;
 
-            // 2. Mostramos el correcto
-            if (role === 'director') {
-                document.getElementById('directorPanel').classList.remove('hidden');
-                document.getElementById('btnDirectorMenu').classList.remove('hidden');
-                document.getElementById('roleBadge').textContent = "DIRECTOR";
-                document.getElementById('roleBadge').classList.remove('hidden');
-            } else if (role === 'musician') {
-                document.getElementById('musicianPanel').classList.remove('hidden');
-                document.getElementById('roleBadge').textContent = `MÚSICO: ${selectedInstrument}`;
-                document.getElementById('roleBadge').classList.remove('hidden');
-                generarListaMusicoManual();
-                renderMusicoPantalla(); // <-- FORZAR renderizado aquí
-            } else if (role === 'projector') {
-                document.getElementById('projectorPanel').classList.remove('hidden');
-                document.getElementById('roleBadge').textContent = "PROYECTOR";
-                document.getElementById('roleBadge').classList.remove('hidden');
-            }
+    // 1. Ocultar TODOS los paneles posibles
+    document.getElementById('directorPanel').classList.add('hidden');
+    document.getElementById('musicianPanel').classList.add('hidden');
+    document.getElementById('projectorPanel').classList.add('hidden');
+    document.getElementById('roleScreen').classList.add('hidden');
+    document.getElementById('instrumentScreen').classList.add('hidden');
+    document.getElementById('setupScreen').classList.add('hidden');
 
-            document.getElementById('btnExitRole').classList.remove('hidden');
-            renderApp();
-        }
+    // 2. Mostrar el panel correspondiente
+    if (role === 'director') {
+        document.getElementById('directorPanel').classList.remove('hidden');
+        document.getElementById('btnDirectorMenu').classList.remove('hidden');
+    } else if (role === 'musician') {
+        // AQUÍ ESTÁ EL TRUCO: Quitamos el hidden del panel principal
+        document.getElementById('musicianPanel').classList.remove('hidden');
+        generarListaMusicoManual();
+        renderMusicoPantalla(); 
+    } else if (role === 'projector') {
+        document.getElementById('projectorPanel').classList.remove('hidden');
+        renderProyectorPantalla();
+    }
+
+    // 3. Elementos comunes
+    document.getElementById('roleBadge').textContent = role.toUpperCase();
+    document.getElementById('roleBadge').classList.remove('hidden');
+    document.getElementById('btnExitRole').classList.remove('hidden');
+    
+    renderApp();
+}
 
         function abrirSelectorInstrumento() {
             document.getElementById('roleScreen').classList.add('hidden');
