@@ -994,23 +994,29 @@ const listaInstrumentos = [
 
 // ==================== OPERACIONES DEL PROYECTOR ====================
         function renderProyectorPantalla() {
+    // Si no somos el proyector, nos vamos
     if (activeRole !== 'projector') return;
 
-    const container = document.getElementById('projectionText');
+    // Buscamos los elementos
     const panel = document.getElementById('projectorPanel');
+    const container = document.getElementById('projectionText');
     
-    // FORZAMOS LA VISIBILIDAD: Quitamos la clase 'hidden' obligatoriamente
-    panel.classList.remove('hidden');
-    panel.style.display = 'flex'; // Aseguramos que se vea
+    // PROTECCIÓN: Si alguno no existe, salimos sin errores
+    if (!panel || !container) {
+        console.warn("El proyector no está listo aún, esperando...");
+        return; 
+    }
 
-    // Lógica del Blackout
+    // Si existen, procedemos con seguridad
+    panel.classList.remove('hidden');
+    panel.style.display = 'flex';
+
     if (window.state.liveState.blackout) {
-        container.style.opacity = '0'; // Cambiamos esto por opacidad directa
+        container.style.opacity = '0';
     } else {
         container.style.opacity = '1';
     }
 
-    // Renderizado de letras
     const liveState = window.state.liveState;
     const himno = window.state.songs[liveState.songId];
 
@@ -1018,7 +1024,7 @@ const listaInstrumentos = [
         const estrofas = himno.letra.split(/\n\s*\n/).map(e => e.trim());
         container.textContent = estrofas[liveState.verseIndex] || '';
         container.style.fontSize = `${currentProjectorFontSize}px`;
-        container.style.color = 'white'; // Aseguramos color blanco
+        container.style.color = 'white';
     } else {
         container.textContent = "Esperando transmisión...";
         container.style.color = 'gray';
