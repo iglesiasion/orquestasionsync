@@ -21,7 +21,12 @@
         /* Animaciones */
         .sidebar-transition { transition: transform 0.3s ease-in-out; }
         .sheet-zoom { transition: transform 0.2s ease-out; transform-origin: center center; }
-        .blackout { background-color: #000 !important; opacity: 0 !important; transition: opacity 0.5s; }
+        .blackout { 
+    background-color: #000 !important; 
+    opacity: 0 !important; 
+    pointer-events: none !important; /* Esto evita que el texto bloquee clics */
+    visibility: hidden !important;   /* Esto asegura que sea invisible al sistema */
+}
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col overflow-x-hidden lg:overflow-hidden select-none">
@@ -989,33 +994,36 @@ const listaInstrumentos = [
 
 // ==================== OPERACIONES DEL PROYECTOR ====================
         function renderProyectorPantalla() {
-            if (activeRole !== 'projector') return;
+    if (activeRole !== 'projector') return;
 
-            const container = document.getElementById('projectionText');
-            const panel = document.getElementById('projectorPanel');
-            
-            // 1. Mostrar el panel
-            panel.classList.remove('hidden');
+    const container = document.getElementById('projectionText');
+    const panel = document.getElementById('projectorPanel');
+    
+    // FORZAMOS LA VISIBILIDAD: Quitamos la clase 'hidden' obligatoriamente
+    panel.classList.remove('hidden');
+    panel.style.display = 'flex'; // Aseguramos que se vea
 
-            // 2. Aplicar el blackout usando la clase CSS que ya tienes definida
-            if (window.state.liveState.blackout) {
-                container.classList.add('blackout');
-            } else {
-                container.classList.remove('blackout');
-            }
+    // Lógica del Blackout
+    if (window.state.liveState.blackout) {
+        container.style.opacity = '0'; // Cambiamos esto por opacidad directa
+    } else {
+        container.style.opacity = '1';
+    }
 
-            // 3. Renderizar letra
-            const liveState = window.state.liveState;
-            const himno = window.state.songs[liveState.songId];
+    // Renderizado de letras
+    const liveState = window.state.liveState;
+    const himno = window.state.songs[liveState.songId];
 
-            if (himno && himno.letra) {
-                const estrofas = himno.letra.split(/\n\s*\n/).map(e => e.trim());
-                container.textContent = estrofas[liveState.verseIndex] || '';
-                container.style.fontSize = `${currentProjectorFontSize}px`;
-            } else {
-                container.innerHTML = `<span class="text-slate-800 font-light italic text-4xl">Esperando transmisión...</span>`;
-            }
-        }
+    if (himno && himno.letra) {
+        const estrofas = himno.letra.split(/\n\s*\n/).map(e => e.trim());
+        container.textContent = estrofas[liveState.verseIndex] || '';
+        container.style.fontSize = `${currentProjectorFontSize}px`;
+        container.style.color = 'white'; // Aseguramos color blanco
+    } else {
+        container.textContent = "Esperando transmisión...";
+        container.style.color = 'gray';
+    }
+}
 
         function cambiarTamañoProyector(amount) {
             currentProjectorFontSize += amount;
