@@ -994,43 +994,38 @@ const listaInstrumentos = [
 
 // ==================== OPERACIONES DEL PROYECTOR ====================
         function renderProyectorPantalla() {
-    // 1. Validar que estemos en el rol proyector
-    if (activeRole !== 'projector') return;
+            if (activeRole !== 'projector') return;
 
-    // 2. BUSCAR elementos con seguridad
-    const panel = document.getElementById('projectorPanel');
-    const container = document.getElementById('projectionText');
+            const panel = document.getElementById('projectorPanel');
+            const container = document.getElementById('projectionText');
+            
+            // Forzar que el panel esté visible siempre
+            if (panel) {
+                panel.classList.remove('hidden');
+                panel.style.display = 'flex';
+                panel.style.zIndex = '9999';
+            }
 
-    // 3. Si el panel NO existe, intentamos buscarlo una vez más o salimos
-    if (!panel) {
-        console.warn("Panel proyector no encontrado, reintentando en un momento...");
-        return;
-    }
+            if (container) {
+                // Aplicar lógica de Blackout sin usar clases CSS que puedan fallar
+                container.style.opacity = window.state.liveState.blackout ? '0' : '1';
+                container.style.visibility = window.state.liveState.blackout ? 'hidden' : 'visible';
 
-    // 4. Forzar visualización
-    panel.classList.remove('hidden');
-    panel.style.display = 'flex';
+                // Renderizado de contenido
+                const liveState = window.state.liveState;
+                const himno = window.state.songs[liveState.songId];
 
-    // 5. Aplicar lógica de Blackout
-    if (container) {
-        container.style.opacity = window.state.liveState.blackout ? '0' : '1';
-        container.style.visibility = window.state.liveState.blackout ? 'hidden' : 'visible';
-
-        // 6. Renderizado de letra
-        const liveState = window.state.liveState;
-        const himno = window.state.songs[liveState.songId];
-
-        if (himno && himno.letra) {
-            const estrofas = himno.letra.split(/\n\s*\n/).map(e => e.trim());
-            container.textContent = estrofas[liveState.verseIndex] || '';
-            container.style.fontSize = `${currentProjectorFontSize}px`;
-            container.style.color = 'white';
-        } else {
-            container.textContent = "Esperando transmisión...";
-            container.style.color = 'gray';
+                if (himno && himno.letra) {
+                    const estrofas = himno.letra.split(/\n\s*\n/).map(e => e.trim());
+                    container.textContent = estrofas[liveState.verseIndex] || '';
+                    container.style.fontSize = `${currentProjectorFontSize}px`;
+                    container.style.color = 'white';
+                } else {
+                    container.textContent = "Esperando transmisión...";
+                    container.style.color = 'gray';
+                }
+            }
         }
-    }
-}
 
         function cambiarTamañoProyector(amount) {
             currentProjectorFontSize += amount;
