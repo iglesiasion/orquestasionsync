@@ -8,12 +8,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  
-<style>
-        /* Estilo para las tarjetas de himnos en el menú del músico */
-        .himno-card-img { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 2px solid transparent; }
-        .himno-card-img:hover { border-color: #6366f1; }
-
+    <style>
         /* Ocultar barras de scroll visuales pero mantener funcional el desplazamiento */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -21,12 +16,7 @@
         /* Animaciones */
         .sidebar-transition { transition: transform 0.3s ease-in-out; }
         .sheet-zoom { transition: transform 0.2s ease-out; transform-origin: center center; }
-        .blackout { 
-    background-color: #000 !important; 
-    opacity: 0 !important; 
-    pointer-events: none !important; /* Esto evita que el texto bloquee clics */
-    visibility: hidden !important;   /* Esto asegura que sea invisible al sistema */
-}
+        .blackout { background-color: #000 !important; opacity: 0 !important; transition: opacity 0.5s; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col overflow-x-hidden lg:overflow-hidden select-none">
@@ -136,7 +126,7 @@
     </div>
 
     <div id="directorPanel" class="hidden flex-grow grid grid-cols-1 lg:grid-cols-12 overflow-y-auto lg:overflow-hidden relative no-scrollbar">
-        <div id="directorSidebar" class="fixed top-16 left-0 bottom-0 z-50 w-80 bg-slate-900 border-r border-slate-800 p-5 flex flex-col gap-6 sidebar-transition -translate-x-full shadow-2xl">
+        <div id="directorSidebar" class="fixed top-16 left-0 bottom-0 z-35 w-80 bg-slate-900 border-r border-slate-800 p-5 flex flex-col gap-6 sidebar-transition -translate-x-full shadow-2xl">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
                 <h3 class="font-bold text-xs text-indigo-400 flex items-center gap-1.5 uppercase tracking-wider">
                     <i data-lucide="library" class="w-4 h-4"></i> Biblioteca e Ingreso
@@ -320,15 +310,15 @@
         </div>
 
         <div id="musicianSheetContainer" class="w-full h-full flex justify-center items-center overflow-auto p-2 no-scrollbar">
-    <div id="musicianWaitText" class="text-center text-slate-600 max-w-sm p-6">
-        </div>
-    
-    <div id="musicianContentWrapper" class="w-full h-full flex flex-col items-center">
-        <img id="musicianSheetImg" class="sheet-zoom max-w-full max-h-full object-contain hidden" src="" alt="Partitura cargando...">
-        <div id="musicianLibreScroll" class="w-full flex flex-col items-center hidden">
+            <div id="musicianWaitText" class="text-center text-slate-600 max-w-sm p-6">
+                <i data-lucide="music-3" class="w-16 h-16 text-slate-800 mx-auto mb-4 animate-bounce"></i>
+                <p class="font-bold text-slate-400 text-lg">Atril Virtual Activo</p>
+                <p class="text-xs text-slate-600 mt-2">Coloca tu dispositivo en tu atril. La partitura de <strong id="musicianWaitLabel" class="text-emerald-400">--</strong> aparecerá tan pronto como el director inicie el himno.</p>
             </div>
+            <img id="musicianSheetImg" class="sheet-zoom max-w-full max-h-full object-contain hidden" src="" alt="Partitura cargando...">
+        </div>
     </div>
-</div>
+
     <div id="projectorPanel" class="hidden flex-grow bg-black relative w-full h-full bg-black flex flex-col justify-center items-center p-8 select-none">
         <div class="absolute top-4 left-4 right-4 flex justify-between opacity-0 hover:opacity-100 transition-opacity z-50">
             <span class="text-[9px] text-slate-755 font-bold">Proyector OrquestaSIONsync</span>
@@ -457,15 +447,11 @@ const listaInstrumentos = [
                 if (data) {
                     window.state.songs = data.songs || {};
                     window.state.activeSet = data.activeSet || [];
-                    // Si el estado en Firebase viene vacío, le damos un valor inicial
-                    window.state.liveState = data.liveState || { songId: "", verseIndex: 0, blackout: false };
+                    window.state.liveState = data.liveState || { songId: "", verseIndex: 0 };
                     
-                    renderApp(); // Esto renderiza lo que el director ve
-                    
-                    // --- ESTA LÍNEA ES LA QUE OBLIGA AL PROYECTOR A ACTUALIZARSE ---
-                    if (activeRole === 'projector') {
-                        renderProyectorPantalla();
-                    }
+                    renderApp();
+                } else {
+                    guardarEstadoEnServidor();
                 }
             }, (error) => {
                 console.error("Error en conexión:", error);
@@ -478,38 +464,38 @@ const listaInstrumentos = [
         }
 
         function elegirRol(role) {
-    console.log("Intentando entrar al rol: " + role);
-    activeRole = role;
+            activeRole = role;
+            document.getElementById('roleScreen').classList.add('hidden');
+            document.getElementById('instrumentScreen').classList.add('hidden');
+            document.getElementById('btnExitRole').classList.remove('hidden');
 
-    // 1. Ocultar TODOS los paneles posibles
-    document.getElementById('directorPanel').classList.add('hidden');
-    document.getElementById('musicianPanel').classList.add('hidden');
-    document.getElementById('projectorPanel').classList.add('hidden');
-    document.getElementById('roleScreen').classList.add('hidden');
-    document.getElementById('instrumentScreen').classList.add('hidden');
-    document.getElementById('setupScreen').classList.add('hidden');
+            const roleBadge = document.getElementById('roleBadge');
+            roleBadge.classList.remove('hidden');
 
-    // 2. Mostrar el panel correspondiente
-    if (role === 'director') {
-        document.getElementById('directorPanel').classList.remove('hidden');
-        document.getElementById('btnDirectorMenu').classList.remove('hidden');
-    } else if (role === 'musician') {
-        // AQUÍ ESTÁ EL TRUCO: Quitamos el hidden del panel principal
-        document.getElementById('musicianPanel').classList.remove('hidden');
-        generarListaMusicoManual();
-        renderMusicoPantalla(); 
-    } else if (role === 'projector') {
-        document.getElementById('projectorPanel').classList.remove('hidden');
-        renderProyectorPantalla();
-    }
+            document.getElementById('directorPanel').classList.add('hidden');
+            document.getElementById('musicianPanel').classList.add('hidden');
+            document.getElementById('projectorPanel').classList.add('hidden');
+            document.getElementById('btnDirectorMenu').classList.add('hidden');
 
-    // 3. Elementos comunes
-    document.getElementById('roleBadge').textContent = role.toUpperCase();
-    document.getElementById('roleBadge').classList.remove('hidden');
-    document.getElementById('btnExitRole').classList.remove('hidden');
-    
-    renderApp();
-}
+            if (role === 'director') {
+                document.getElementById('directorPanel').classList.remove('hidden');
+                document.getElementById('btnDirectorMenu').classList.remove('hidden');
+                roleBadge.textContent = "DIRECTOR";
+                roleBadge.className = "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider";
+                cerrarFormularioIngreso();
+            } else if (role === 'musician') {
+                document.getElementById('musicianPanel').classList.remove('hidden');
+                roleBadge.textContent = `MÚSICO: ${selectedInstrument}`;
+                roleBadge.className = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider";
+                generarListaMusicoManual();
+            } else if (role === 'projector') {
+                document.getElementById('projectorPanel').classList.remove('hidden');
+                roleBadge.textContent = "PROYECTOR / CANTORES";
+                roleBadge.className = "bg-sky-500/10 text-sky-400 border border-sky-500/20 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider";
+            }
+
+            renderApp();
+        }
 
         function abrirSelectorInstrumento() {
             document.getElementById('roleScreen').classList.add('hidden');
@@ -517,17 +503,11 @@ const listaInstrumentos = [
         }
 
         function confirmarInstrumento() {
-    selectedInstrument = document.getElementById('instrumentSelector').value;
-    document.getElementById('musicianInstrumentSelector').value = selectedInstrument;
-    
-    // Añadimos este chequeo para evitar que el error de "null" detenga todo
-    const waitLabel = document.getElementById('musicianWaitLabel');
-    if (waitLabel) {
-        waitLabel.textContent = selectedInstrument;
-    }
-    
-    elegirRol('musician');
-}
+            selectedInstrument = document.getElementById('instrumentSelector').value;
+            document.getElementById('musicianInstrumentSelector').value = selectedInstrument;
+            document.getElementById('musicianWaitLabel').textContent = selectedInstrument;
+            elegirRol('musician');
+        }
 
         function salirAlMenuRoles() {
             activeRole = null;
@@ -870,15 +850,16 @@ const listaInstrumentos = [
             const manualBox = document.getElementById('manualSongsBox');
 
             if (sync) {
-                // ... (tu lógica existente de botones) ...
+                btnOn.className = "bg-emerald-600 text-white text-xs font-bold py-2 rounded-lg transition shadow-md";
+                btnOff.className = "bg-slate-800 hover:bg-slate-750 text-slate-400 text-xs font-bold py-2 rounded-lg transition border border-slate-700";
                 manualBox.classList.add('hidden');
                 manualSelectedSongId = null; 
                 mostrarToast("Sincronizado: Sigues al director");
             } else {
-                // ... (tu lógica existente de botones) ...
+                btnOn.className = "bg-slate-800 hover:bg-slate-750 text-slate-400 text-xs font-bold py-2 rounded-lg transition border border-slate-700";
+                btnOff.className = "bg-emerald-600 text-white text-xs font-bold py-2 rounded-lg transition shadow-md";
                 manualBox.classList.remove('hidden');
-                mostrarToast("Modo Libre: Explora tu libro infinito");
-                toggleMusicianMenu(); // <--- ESTO hará que el menú desaparezca al activar el modo libre
+                mostrarToast("Modo Libre: Explora la lista manualmente");
                 generarListaMusicoManual();
             }
             renderMusicoPantalla();
@@ -894,90 +875,91 @@ const listaInstrumentos = [
         }
 
         function generarListaMusicoManual() {
-    const container = document.getElementById('musicianManualList');
-    container.innerHTML = '';
-    
-    const ids = Object.keys(window.state.songs);
-    if (ids.length === 0) {
-        container.innerHTML = `<p class="text-[9px] text-slate-600 text-center py-2">Sin himnos cargados</p>`;
-        return;
-    }
+            const container = document.getElementById('musicianManualList');
+            container.innerHTML = '';
+            
+            const ids = Object.keys(window.state.songs);
+            if (ids.length === 0) {
+                container.innerHTML = `<p class="text-[9px] text-slate-600 text-center py-2">Sin himnos cargados</p>`;
+                return;
+            }
 
-    ids.forEach(id => {
-        const himno = window.state.songs[id];
-        // Intentamos obtener la primera imagen de partitura para mostrarla
-        const primeraUrl = (himno.urlsInstrumentos && Object.keys(himno.urlsInstrumentos).length > 0) 
-                       ? Object.values(himno.urlsInstrumentos)[0] : '';
-        
-        const card = document.createElement('div');
-        card.className = `p-2 rounded-xl border transition mb-3 ${manualSelectedSongId === id ? 'bg-emerald-950/40 border-emerald-500' : 'bg-slate-900 border-slate-800'}`;
-        
-        card.innerHTML = `
-            ${primeraUrl ? `<img src="${primeraUrl}" class="himno-card-img mb-2" onclick="seleccionarHimnoMusico('${id}')">` : 
-                           `<div class="w-full h-24 bg-slate-800 flex items-center justify-center mb-2 rounded-lg cursor-pointer" onclick="seleccionarHimnoMusico('${id}')"><i data-lucide="music" class="w-8 h-8 text-slate-600"></i></div>`}
-            <p class="text-[10px] font-bold text-center truncate text-slate-200">${himno.titulo}</p>
-        `;
-        container.appendChild(card);
-    });
-    lucide.createIcons();
-}
+            ids.forEach(id => {
+                const himno = window.state.songs[id];
+                const btn = document.createElement('button');
+                
+                if (!isMusicianSyncMode && manualSelectedSongId === id) {
+                    btn.className = "w-full text-left text-[10px] p-1.5 bg-emerald-950/40 border border-emerald-900/30 rounded text-emerald-400 font-bold transition truncate";
+                } else {
+                    btn.className = "w-full text-left text-[10px] p-1.5 hover:bg-slate-800 rounded text-slate-300 hover:text-white transition truncate";
+                }
+                
+                btn.textContent = himno.titulo;
+                btn.onclick = () => {
+                    manualSelectedSongId = id;
+                    generarListaMusicoManual(); 
+                    renderMusicoPantalla();
+                    mostrarToast(`Mostrando: ${himno.titulo}`);
+                };
+                container.appendChild(btn);
+            });
+        }
 
         function renderMusicoPantalla() {
-    if (activeRole !== 'musician') return;
+            if (activeRole !== 'musician') return;
 
-    const waitBox = document.getElementById('musicianWaitText');
-    const contentWrapper = document.getElementById('musicianContentWrapper');
-    const singleImg = document.getElementById('musicianSheetImg');
-    const libreScroll = document.getElementById('musicianLibreScroll');
-    const musicianPanel = document.getElementById('musicianPanel');
+            const songId = isMusicianSyncMode ? window.state.liveState.songId : manualSelectedSongId;
+            const himno = window.state.songs[songId];
 
-    // Aseguramos que el panel principal esté visible
-    musicianPanel.classList.remove('hidden');
+            const waitBox = document.getElementById('musicianWaitText');
+            const img = document.getElementById('musicianSheetImg');
 
-    if (isMusicianSyncMode) {
-        // --- MODO DIRECTOR ---
-        contentWrapper.classList.remove('hidden');
-        singleImg.classList.remove('hidden');
-        libreScroll.classList.add('hidden');
-        
-        const himno = window.state.songs[window.state.liveState.songId];
-        
-        if (himno && himno.urlsInstrumentos && himno.urlsInstrumentos[selectedInstrument]) {
-            waitBox.classList.add('hidden');
-            singleImg.src = himno.urlsInstrumentos[selectedInstrument];
-        } else {
-            singleImg.classList.add('hidden');
-            waitBox.classList.remove('hidden');
-            waitBox.innerHTML = `
-                <i data-lucide="music-3" class="w-16 h-16 text-slate-800 mx-auto mb-4 animate-bounce"></i>
-                <p class="font-bold text-slate-400 text-lg">Atril Virtual Activo</p>
-                <p class="text-xs text-slate-600 mt-2">Esperando partitura de: <strong class="text-emerald-400">${selectedInstrument}</strong></p>
-            `;
-        }
-    } else {
-        // --- MODO LIBRE (Libro Infinito) ---
-        waitBox.classList.add('hidden');
-        singleImg.classList.add('hidden');
-        contentWrapper.classList.remove('hidden');
-        libreScroll.classList.remove('hidden');
-        libreScroll.innerHTML = ''; 
-
-        if (window.state.activeSet.length === 0) {
-            libreScroll.innerHTML = `<p class="text-center text-slate-500 mt-10">No hay himnos en el repertorio del domingo.</p>`;
-        }
-
-        window.state.activeSet.forEach(id => {
-            const himno = window.state.songs[id];
-            if (himno && himno.urlsInstrumentos && himno.urlsInstrumentos[selectedInstrument]) {
-                const img = document.createElement('img');
-                img.src = himno.urlsInstrumentos[selectedInstrument];
-                img.className = "w-full mb-12 border-b-4 border-slate-800 pb-12";
-                libreScroll.appendChild(img);
+            const waitLabel = document.getElementById('musicianWaitLabel');
+            if (waitLabel) {
+                waitLabel.textContent = selectedInstrument || "--";
             }
-        });
-    }
-    lucide.createIcons(); // Recargar iconos
-}
+
+            if (himno) {
+                const url = (himno.urlsInstrumentos && himno.urlsInstrumentos[selectedInstrument]) ? himno.urlsInstrumentos[selectedInstrument] : '';
+                if (url) {
+                    waitBox.classList.add('hidden');
+                    img.classList.remove('hidden');
+                    
+                    if (img.src !== url) {
+                        img.src = url;
+                    }
+                } else {
+                    img.classList.add('hidden');
+                    img.src = ""; 
+                    waitBox.classList.remove('hidden');
+                    waitBox.innerHTML = `
+                        <i data-lucide="music-3" class="w-12 h-12 text-slate-800 mx-auto mb-3"></i>
+                        <p class="font-bold text-slate-300 text-lg">${himno.titulo}</p>
+                        <p class="text-xs text-slate-500 mt-1">No hay partitura cargada para <strong>${selectedInstrument}</strong>.</p>
+                        <p class="text-[9px] text-slate-600 mt-2">Pídele al director que ingrese el enlace de partitura para tu instrumento.</p>
+                    `;
+                }
+            } else {
+                img.classList.add('hidden');
+                img.src = "";
+                waitBox.classList.remove('hidden');
+                
+                if (!isMusicianSyncMode) {
+                    waitBox.innerHTML = `
+                        <i data-lucide="library" class="w-16 h-16 text-slate-800 mx-auto mb-4"></i>
+                        <p class="font-bold text-slate-400 text-lg">Modo Libre Activo</p>
+                        <p class="text-xs text-slate-600 mt-2">Selecciona un canto de la lista del menú lateral para estudiar tu partitura sin alterar las pantallas generales.</p>
+                    `;
+                } else {
+                    waitBox.innerHTML = `
+                        <i data-lucide="music-3" class="w-16 h-16 text-slate-800 mx-auto mb-4 animate-bounce"></i>
+                        <p class="font-bold text-slate-400 text-lg">Atril Virtual Activo</p>
+                        <p class="text-xs text-slate-600 mt-2">Coloca tu dispositivo en tu atril. La partitura de <strong class="text-emerald-400">${selectedInstrument || '--'}</strong> aparecerá tan pronto como el director inicie el himno.</p>
+                    `;
+                }
+            }
+            lucide.createIcons();
+        }
 
         function cambiarZoom(amount) {
             currentMusicianZoom += amount;
@@ -992,38 +974,25 @@ const listaInstrumentos = [
         }
 
 
-// ==================== OPERACIONES DEL PROYECTOR ====================
+        // ==================== OPERACIONES DEL PROYECTOR ====================
         function renderProyectorPantalla() {
             if (activeRole !== 'projector') return;
 
-            const panel = document.getElementById('projectorPanel');
             const container = document.getElementById('projectionText');
-            
-            // Forzar que el panel esté visible siempre
-            if (panel) {
-                panel.classList.remove('hidden');
-                panel.style.display = 'flex';
-                panel.style.zIndex = '9999';
+            if (window.state.liveState.blackout) {
+                container.classList.add('blackout');
+            } else {
+                container.classList.remove('blackout');
             }
+            const liveState = window.state.liveState;
+            const himno = window.state.songs[liveState.songId];
 
-            if (container) {
-                // Aplicar lógica de Blackout sin usar clases CSS que puedan fallar
-                container.style.opacity = window.state.liveState.blackout ? '0' : '1';
-                container.style.visibility = window.state.liveState.blackout ? 'hidden' : 'visible';
-
-                // Renderizado de contenido
-                const liveState = window.state.liveState;
-                const himno = window.state.songs[liveState.songId];
-
-                if (himno && himno.letra) {
-                    const estrofas = himno.letra.split(/\n\s*\n/).map(e => e.trim());
-                    container.textContent = estrofas[liveState.verseIndex] || '';
-                    container.style.fontSize = `${currentProjectorFontSize}px`;
-                    container.style.color = 'white';
-                } else {
-                    container.textContent = "Esperando transmisión...";
-                    container.style.color = 'gray';
-                }
+            if (himno && himno.letra) {
+                const estrofas = himno.letra.split(/\n\s*\n/).map(e => e.trim());
+                container.textContent = estrofas[liveState.verseIndex] || '';
+                container.style.fontSize = `${currentProjectorFontSize}px`;
+            } else {
+                container.innerHTML = `<span class="text-slate-800 font-light italic text-4xl">OrquestaSIONsync Listo</span>`;
             }
         }
 
@@ -1056,22 +1025,10 @@ function limpiarTodaLaLista() {
     }
 }
  function toggleBlackout() {
-    // Invertir el valor en la variable local
-    window.state.liveState.blackout = !window.state.liveState.blackout;
-    
-    // Forzar la actualización inmediata en Firebase
-    db.ref(`orquesta_rooms/${roomCode}/liveState`).update({
-        blackout: window.state.liveState.blackout
-    });
-
-    mostrarToast(window.state.liveState.blackout ? "Pantalla en Negro ACTIVA" : "Pantalla en Negro DESACTIVADA");
-}  
-        function seleccionarHimnoMusico(id) {
-            manualSelectedSongId = id;
-            generarListaMusicoManual(); 
-            renderMusicoPantalla();
-            mostrarToast(`Seleccionado: ${window.state.songs[id].titulo}`);
-        }
-    </script>
+            window.state.liveState.blackout = !window.state.liveState.blackout;
+            mostrarToast(window.state.liveState.blackout ? "Pantallas en negro" : "Pantallas encendidas");
+            guardarEstadoEnServidor();
+        }   
+</script>
 </body>
 </html>
