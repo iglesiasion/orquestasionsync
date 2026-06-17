@@ -8,90 +8,1036 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <style>
+  
+<style>
+        /* Estilo para las tarjetas de himnos en el menú del músico */
         .himno-card-img { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 2px solid transparent; }
         .himno-card-img:hover { border-color: #6366f1; }
+
+        /* Ocultar barras de scroll visuales pero mantener funcional el desplazamiento */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Animaciones */
         .sidebar-transition { transition: transform 0.3s ease-in-out; }
         .sheet-zoom { transition: transform 0.2s ease-out; transform-origin: center center; }
         .blackout { background-color: #000 !important; opacity: 0 !important; transition: opacity 0.5s; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col overflow-x-hidden lg:overflow-hidden select-none">
-    
-    <script>
-        // ... (Toda la lógica de variables y funciones de conexión igual que la que me pasaste) ...
 
-        // Lógica del Músico Integrada (La versión que sí hacía scroll)
+    <header class="bg-slate-900 border-b border-slate-800 h-16 px-6 flex items-center justify-between z-30 flex-shrink-0">
+        <div class="flex items-center gap-3">
+            <button id="btnDirectorMenu" onclick="toggleDirectorMenu()" class="hidden p-2 bg-slate-800 hover:bg-slate-755 border border-slate-700 rounded-xl transition">
+                <i data-lucide="menu" class="w-5 h-5 text-indigo-400"></i>
+            </button>
+            <div class="flex items-center gap-2">
+<div class="p-1 bg-indigo-600 rounded-lg flex items-center justify-center">
+    <img src="https://www.sionchile.webradios.net/public/album/9/83333-2026-05-27.png" alt="Batuta" class="w-6 h-6 object-contain">
+</div>
+                <div>
+                    <h1 class="text-sm font-black tracking-tight text-white">OrquestaSIONsync v7.1</h1>
+                    <p id="roomIndicator" class="text-[9px] text-slate-500 font-medium">Conectando al servidor...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <span id="roleBadge" class="hidden bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider">Sin Rol</span>
+            <div id="connBadge" class="flex items-center gap-1.5 bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                <span>Desconectado</span>
+            </div>
+            <button id="btnExitRole" onclick="salirAlMenuRoles()" class="hidden bg-slate-800 hover:bg-slate-755 text-slate-300 border border-slate-700 text-[10px] font-bold px-3 py-1.5 rounded-lg transition">
+                Salir
+            </button>
+        </div>
+    </header>
+
+    <div id="setupScreen" class="fixed inset-0 z-50 flex flex-col justify-center items-center p-4 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+        <div class="bg-slate-900/80 backdrop-blur-md border border-slate-800 p-8 rounded-3xl w-full max-w-md shadow-2xl text-center">
+            <div class="inline-flex p-4 bg-indigo-600/20 text-indigo-400 rounded-2xl mb-4">
+                <i data-lucide="wifi" class="w-10 h-10"></i>
+            </div>
+            <h1 class="text-2xl font-black tracking-tight text-white mb-1">Conexión Inalámbrica</h1>
+            <p class="text-xs text-slate-400 mb-6">Ingresa un código para conectar todos tus dispositivos</p>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[10px] font-bold text-slate-400 text-left uppercase tracking-wider mb-1.5">Código de tu Orquesta / Iglesia</label>
+                    <input type="text" id="roomCodeInput" placeholder="Ej. ORQUESTALIVE, MIIGLESIA, TEMPLO" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-center font-bold text-white uppercase focus:outline-none focus:border-indigo-500 transition">
+                </div>
+
+                <button onclick="conectarSala()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20">
+                    <span>Entrar a la Sala</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </button>
+            </div>
+            
+            <p class="text-[10px] text-slate-500 mt-6 leading-relaxed">
+                Escribe el <strong>mismo código</strong> en todos los teléfonos y tablets para que se sincronicen entre sí automáticamente por internet.
+            </p>
+        </div>
+    </div>
+
+    <div id="roleScreen" class="fixed inset-0 z-40 hidden flex flex-col justify-center items-center p-4 bg-slate-950">
+        <div class="text-center mb-10">
+            <h2 class="text-3xl font-black text-white">Selecciona tu Función</h2>
+            <p class="text-slate-400 text-sm mt-1">¿Qué función cumple este dispositivo en el servicio?</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+            <button onclick="elegirRol('director')" class="bg-slate-900 hover:bg-slate-855 border border-slate-800 hover:border-indigo-500 p-6 rounded-2xl text-left transition group shadow-xl">
+                <div class="p-3 bg-indigo-500/10 text-indigo-400 rounded-xl w-12 h-12 flex items-center justify-center mb-4 group-hover:bg-indigo-600 group-hover:text-white transition">
+                    <i data-lucide="sliders"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-1">Director de Música</h3>
+                <p class="text-slate-400 text-xs leading-relaxed">Controla la lista de cantos, administra las letras y partituras de la biblioteca, y guía al proyector.</p>
+            </button>
+
+            <button onclick="abrirSelectorInstrumento()" class="bg-slate-900 hover:bg-slate-855 border border-slate-800 hover:border-emerald-500 p-6 rounded-2xl text-left transition group shadow-xl">
+                <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl w-12 h-12 flex items-center justify-center mb-4 group-hover:bg-emerald-600 group-hover:text-white transition">
+                    <i data-lucide="music-2"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-1">Músico (Orquesta)</h3>
+                <p class="text-slate-400 text-xs leading-relaxed">Elige tu instrumento y visualiza tu partitura a pantalla completa. Se actualiza sola según lo que elija el director.</p>
+            </button>
+
+            <button onclick="elegirRol('projector')" class="bg-slate-900 hover:bg-slate-855 border border-slate-800 hover:border-sky-500 p-6 rounded-2xl text-left transition group shadow-xl">
+                <div class="p-3 bg-sky-500/10 text-sky-400 rounded-xl w-12 h-12 flex items-center justify-center mb-4 group-hover:bg-sky-600 group-hover:text-white transition">
+                    <i data-lucide="monitor"></i>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-1">Proyector / Cantor</h3>
+                <p class="text-slate-400 text-xs leading-relaxed">Fondo negro absoluto y texto blanco gigante, optimizado para proyectores o cantores de coro.</p>
+            </button>
+        </div>
+    </div>
+
+    <div id="instrumentScreen" class="fixed inset-0 z-40 hidden flex flex-col justify-center items-center p-4 bg-slate-950">
+        <div class="bg-slate-900 border border-slate-800 p-8 rounded-3xl w-full max-w-sm shadow-2xl text-center">
+            <div class="inline-flex p-3.5 bg-emerald-600/10 text-emerald-400 rounded-xl mb-4">
+                <i data-lucide="music-4"></i>
+            </div>
+            <h2 class="text-xl font-bold text-white mb-2">Atril Personal</h2>
+            <p class="text-slate-400 text-xs mb-6">Selecciona el instrumento que tocarás en la orquesta hoy:</p>
+
+            <select id="instrumentSelector" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:border-emerald-500 mb-6">
+            </select>
+
+            <button onclick="confirmarInstrumento()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 px-4 rounded-xl text-sm transition shadow-lg shadow-emerald-600/10">
+                Confirmar e Iniciar
+            </button>
+        </div>
+    </div>
+
+    <div id="directorPanel" class="hidden flex-grow grid grid-cols-1 lg:grid-cols-12 overflow-y-auto lg:overflow-hidden relative no-scrollbar">
+        <div id="directorSidebar" class="fixed top-16 left-0 bottom-0 z-50 w-80 bg-slate-900 border-r border-slate-800 p-5 flex flex-col gap-6 sidebar-transition -translate-x-full shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-xs text-indigo-400 flex items-center gap-1.5 uppercase tracking-wider">
+                    <i data-lucide="library" class="w-4 h-4"></i> Biblioteca e Ingreso
+                </h3>
+                <button onclick="toggleDirectorMenu()" class="text-slate-400 hover:text-white transition">
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <button onclick="abrirFormularioIngreso()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Crear / Ingresar Himno
+                </button>
+            </div>
+
+            <div class="flex-grow flex flex-col overflow-hidden">
+                <label class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Todos tus Himnos Guardados</label>
+                <div class="relative mb-3">
+                    <i data-lucide="search" class="absolute left-3 top-2.5 text-slate-600 w-3.5 h-3.5"></i>
+                    <input type="text" id="librarySearchInput" oninput="buscarEnBiblioteca()" placeholder="Buscar himno..." class="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div id="libraryList" class="flex-grow overflow-y-auto space-y-1.5 pr-1 no-scrollbar">
+                    </div>
+            </div>
+        </div>
+
+        <div id="directorActiveServiceView" class="lg:col-span-12 grid grid-cols-1 lg:grid-cols-12 h-full">
+            <div class="lg:col-span-4 bg-slate-950 border-r border-slate-800 flex flex-col h-auto lg:h-full">
+<div class="p-4 border-b border-slate-800 bg-slate-900/40">
+    <div class="flex justify-between items-center">
+        <h3 class="font-black text-xs text-white flex items-center gap-1.5 uppercase tracking-wider">
+            <i data-lucide="calendar" class="text-emerald-400 w-4 h-4"></i> Repertorio de este Domingo
+        </h3>
+        <button onclick="limpiarTodaLaLista()" class="text-[9px] font-bold text-red-400 hover:text-red-300 underline uppercase">Limpiar todo</button>
+    </div>
+    <p class="text-[9px] text-slate-500 mt-1">Usa las flechas laterales para reordenar los cantos en tiempo real</p>
+</div>
+
+                <div id="sundaySetlist" class="overflow-y-auto p-4 space-y-2.5 no-scrollbar max-h-[320px] lg:max-h-[calc(100vh-260px)]">
+                </div>
+
+                <div class="p-4 border-t border-slate-800 bg-slate-900/20 space-y-3 mt-auto">
+                    <h4 class="text-[9px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span>
+                        Monitor de Pantallas en Vivo
+                    </h4>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="bg-black border border-slate-800 rounded-xl p-2 h-20 flex flex-col justify-between relative overflow-hidden">
+                            <span class="absolute top-1 left-1 bg-emerald-950/80 text-emerald-400 text-[7px] font-black px-1.5 py-0.5 rounded border border-emerald-500/20">ORQUESTA (MUESTRA)</span>
+                            <div id="monitorOrquesta" class="w-full h-full flex items-center justify-center pt-2">
+                                <i data-lucide="music" class="text-slate-800 w-6 h-6"></i>
+                            </div>
+                        </div>
+                        <div class="bg-black border border-slate-800 rounded-xl p-2 h-20 flex flex-col justify-between relative overflow-hidden">
+                            <span class="absolute top-1 left-1 bg-sky-950/80 text-sky-400 text-[7px] font-black px-1.5 py-0.5 rounded border border-sky-500/20">PROYECTOR</span>
+                            <div id="monitorProyector" class="w-full h-full flex items-center justify-center text-center text-[7px] text-slate-400 font-bold px-1 pt-2 line-clamp-3 leading-tight">
+                                Sin señal
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-8 flex flex-col bg-slate-900/20 p-6 h-auto lg:h-full">
+                <div class="flex-grow flex flex-col h-full">
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <span class="inline-block bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest mb-1 animate-pulse">TRANSMISIÓN EN DIRECTO</span>
+                            <h2 id="liveActiveSongTitle" class="text-2xl font-black text-white">Ningún himno transmitiendo</h2>
+                            <p id="liveActiveSongSubtitle" class="text-xs text-slate-400 mt-1">Selecciona un himno del "Repertorio de este Domingo" y toca una estrofa para proyectarla.</p>
+                        </div>
+                    </div>
+
+                    <div id="liveVerseControlList" class="grid grid-cols-1 md:grid-cols-2 gap-3.5 pr-1 pb-16 align-content-start">
+                    </div>
+                </div>
+            </div>
+        </div>
+<div class="px-6 pb-6">
+            <button onclick="toggleBlackout()" class="w-full bg-slate-800 hover:bg-red-950 border border-slate-700 text-slate-300 hover:text-white font-bold py-3 rounded-xl text-[10px] uppercase tracking-widest transition flex items-center justify-center gap-2">
+                <i data-lucide="eye-off" class="w-4 h-4"></i> Pantalla en Negro (Blackout)
+            </button>
+        </div>
+        <div id="directorFormView" class="hidden absolute inset-0 z-45 bg-slate-950/95 flex items-center justify-center p-4 overflow-y-auto">
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl p-6 shadow-2xl my-auto">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-4">
+                    <h3 id="formActionTitle" class="font-black text-lg text-white">Ingresar Nuevo Himno</h3>
+                    <button onclick="cerrarFormularioIngreso()" class="text-slate-400 hover:text-white transition">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+
+                <input type="hidden" id="formSongId">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Título del Himno</label>
+                            <input type="text" id="formSongTitle" placeholder="Ej. Cuán Grande Es Él" class="w-full bg-slate-950 border border-slate-850 rounded-xl px-4 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Letras (Separa estrofas dejando un renglón vacío)</label>
+                            <textarea id="formSongLyrics" rows="12" placeholder="Escribe o pega la letra aquí..." class="w-full bg-slate-950 border border-slate-850 rounded-xl px-4 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 transition no-scrollbar"></textarea>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Partituras por Instrumento (Enlaces de Imágenes)</label>
+                        <p class="text-[9px] text-slate-500 mb-2">Ingresa las direcciones URL de las imágenes:</p>
+                        
+                        <div id="formInstrumentUrls" class="space-y-2 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-800">
+                    <button onclick="cerrarFormularioIngreso()" class="bg-slate-800 hover:bg-slate-755 text-slate-300 font-semibold py-2.5 px-5 rounded-xl text-xs transition border border-slate-700">
+                        Cancelar
+                    </button>
+                    <button id="btnDeleteFormSong" onclick="eliminarHimnoForm()" class="hidden bg-red-950/50 hover:bg-red-900 border border-red-900/30 text-red-400 hover:text-white font-semibold py-2.5 px-5 rounded-xl text-xs transition">
+                        Eliminar Himno
+                    </button>
+                    <button onclick="guardarHimno()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-6 rounded-xl text-xs transition">
+                        Guardar y Sincronizar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="musicianPanel" class="hidden flex-grow relative w-full h-full bg-black overflow-hidden flex flex-col justify-center items-center">
+        <button onclick="toggleMusicianMenu()" class="absolute top-4 right-4 z-50 p-2.5 bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white rounded-xl transition shadow-lg backdrop-blur-sm">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+
+        <div id="musicianMenu" class="fixed top-0 right-0 bottom-0 z-45 w-72 bg-slate-900 border-l border-slate-800 p-6 flex flex-col gap-6 sidebar-transition translate-x-full shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                <h3 class="font-bold text-xs text-indigo-400 flex items-center gap-1.5 uppercase tracking-wider">
+                    <i data-lucide="settings"></i> Ajustes del Atril
+                </h3>
+                <button onclick="toggleMusicianMenu()" class="text-slate-400 hover:text-white transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 flex flex-col flex-grow overflow-hidden">
+                <div>
+                    <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Instrumento Seleccionado</label>
+                    <select id="musicianInstrumentSelector" onchange="cambiarInstrumentoMusico()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Modo de Visualización</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="btnSyncOn" onclick="setSincronizacionMusico(true)" class="bg-emerald-600 text-white text-xs font-bold py-2 rounded-lg transition shadow-md">Seguir Dir.</button>
+                        <button id="btnSyncOff" onclick="setSincronizacionMusico(false)" class="bg-slate-800 hover:bg-slate-755 text-slate-400 text-xs font-bold py-2 rounded-lg transition border border-slate-700">Modo Libre</button>
+                    </div>
+                </div>
+
+                <div id="manualSongsBox" class="hidden flex flex-col flex-grow overflow-hidden">
+                    <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Biblioteca General (Libre)</label>
+                    <div id="musicianManualList" class="bg-slate-950 border border-slate-800 rounded-xl p-2 flex-grow overflow-y-auto space-y-1 no-scrollbar">
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-800 pt-4 mt-auto space-y-3">
+                <label class="block text-[9px] font-black text-slate-400 uppercase tracking-widest text-center">Zoom de Partitura</label>
+                <div class="flex items-center justify-center gap-3">
+                    <button onclick="cambiarZoom(-0.1)" class="p-2.5 bg-slate-800 hover:bg-slate-755 text-slate-300 rounded-xl transition border border-slate-700">
+                        <i data-lucide="zoom-out" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="restaurarZoom()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-755 text-xs font-bold text-slate-300 rounded-xl transition border border-slate-700">
+                        Ajustar
+                    </button>
+                    <button onclick="cambiarZoom(0.1)" class="p-2.5 bg-slate-800 hover:bg-slate-755 text-slate-300 rounded-xl transition border border-slate-700">
+                        <i data-lucide="zoom-in" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="musicianSheetContainer" class="w-full h-full flex justify-center items-center overflow-auto p-2 no-scrollbar">
+            <div id="musicianWaitText" class="text-center text-slate-600 max-w-sm p-6">
+                <i data-lucide="music-3" class="w-16 h-16 text-slate-800 mx-auto mb-4 animate-bounce"></i>
+                <p class="font-bold text-slate-400 text-lg">Atril Virtual Activo</p>
+                <p class="text-xs text-slate-600 mt-2">Coloca tu dispositivo en tu atril. La partitura de <strong id="musicianWaitLabel" class="text-emerald-400">--</strong> aparecerá tan pronto como el director inicie el himno.</p>
+            </div>
+            <img id="musicianSheetImg" class="sheet-zoom max-w-full max-h-full object-contain hidden" src="" alt="Partitura cargando...">
+        </div>
+    </div>
+
+    <div id="projectorPanel" class="hidden flex-grow bg-black relative w-full h-full bg-black flex flex-col justify-center items-center p-8 select-none">
+        <div class="absolute top-4 left-4 right-4 flex justify-between opacity-0 hover:opacity-100 transition-opacity z-50">
+            <span class="text-[9px] text-slate-755 font-bold">Proyector OrquestaSIONsync</span>
+            <div class="flex gap-1">
+                <button onclick="cambiarTamañoProyector(-4)" class="px-2 py-1 bg-slate-900 border border-slate-800 text-slate-300 rounded text-[10px] hover:bg-slate-800">A-</button>
+                <button onclick="cambiarTamañoProyector(4)" class="px-2 py-1 bg-slate-900 border border-slate-800 text-slate-300 rounded text-[10px] hover:bg-slate-800">A+</button>
+            </div>
+        </div>
+
+        <div id="projectionText" class="w-full max-w-6xl text-center text-white font-black leading-tight whitespace-pre-wrap tracking-tight">
+            Esperando transmisión del director...
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-6 right-6 z-55 transform translate-y-20 opacity-0 transition-all duration-300 bg-indigo-600 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2.5">
+        <i data-lucide="info" class="w-4 h-4"></i>
+        <span id="toastText" class="text-xs font-bold">Procesando...</span>
+    </div>
+
+    <script>
+const listaInstrumentos = [
+    "Flauta",
+    "Violín 1",
+    "Violín 2",
+    "Chelo",
+    "Clarinete",
+    "Saxofón",
+    "Trompeta",
+    "Eufonio",
+    "Corno Francés",
+    "Guitarra",
+    "Piano - Órgano",
+    "Cantores - Director"
+];
+
+        const defaultFirebaseConfig = {
+            databaseURL: "https://orchestrasyncapp-default-rtdb.firebaseio.com/"
+        };
+
+        let db = null;
+        let roomCode = "";
+        let activeRole = null;
+        let selectedInstrument = "";
+        let isMusicianSyncMode = true;
+        let manualSelectedSongId = null;
+        let currentMusicianZoom = 1;
+        let currentProjectorFontSize = 64;
+
+        window.state = {
+            songs: {},
+            activeSet: [],
+            liveState: {
+                songId: "",
+                verseIndex: 0,
+                blackout: false //
+            }
+        };
+
+        function conectarSala() {
+            const input = document.getElementById('roomCodeInput');
+            let code = input.value.trim().toUpperCase();
+            
+            if (!code) {
+                alert("Por favor, escribe un código de sala para continuar.");
+                return;
+            }
+
+            roomCode = code;
+            localStorage.setItem('orchestrasync_room_code', roomCode);
+
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(defaultFirebaseConfig);
+                }
+                db = firebase.database();
+                
+                document.getElementById('roomIndicator').textContent = `Sala: ${roomCode}`;
+                document.getElementById('connBadge').className = "flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider animate-pulse";
+                document.getElementById('connBadge').innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span><span>Sala Conectada</span>`;
+
+                document.getElementById('setupScreen').classList.add('hidden');
+                document.getElementById('roleScreen').classList.remove('hidden');
+
+                escucharServidor();
+            } catch (error) {
+                alert("Ocurrió un error al intentar conectarse al servidor: " + error.message);
+                console.error(error);
+            }
+        }
+
+        window.addEventListener('load', () => {
+            const savedRoom = localStorage.getItem('orchestrasync_room_code');
+            if (savedRoom) {
+                document.getElementById('roomCodeInput').value = savedRoom;
+            }
+            cargarSelectoresDeInstrumentos();
+        });
+
+        function cargarSelectoresDeInstrumentos() {
+            const formContainer = document.getElementById('formInstrumentUrls');
+            const instrumentSel = document.getElementById('instrumentSelector');
+            const musInstrumentSel = document.getElementById('musicianInstrumentSelector');
+
+            formContainer.innerHTML = '';
+            instrumentSel.innerHTML = '';
+            musInstrumentSel.innerHTML = '';
+
+            listaInstrumentos.forEach(inst => {
+                formContainer.innerHTML += `
+                    <div class="flex items-center gap-2 bg-slate-950 p-2 border border-slate-850 rounded-xl">
+                        <span class="text-[10px] font-bold text-slate-400 w-24 truncate">${inst}:</span>
+                        <input type="url" id="formUrl-${inst}" placeholder="https://miorquesta.com/partitura.jpg" class="flex-grow bg-slate-900 border border-slate-800 rounded-lg px-2 py-1 text-[10px] text-slate-200 focus:outline-none focus:border-indigo-500">
+                    </div>`;
+
+                const option = `<option value="${inst}">${inst}</option>`;
+                instrumentSel.innerHTML += option;
+                musInstrumentSel.innerHTML += option;
+            });
+        }
+
+        function escucharServidor() {
+            if (!db || !roomCode) return;
+
+            db.ref(`orquesta_rooms/${roomCode}`).on("value", (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    window.state.songs = data.songs || {};
+                    window.state.activeSet = data.activeSet || [];
+                    window.state.liveState = data.liveState || { songId: "", verseIndex: 0 };
+                    
+                    renderApp();
+                } else {
+                    guardarEstadoEnServidor();
+                }
+            }, (error) => {
+                console.error("Error en conexión:", error);
+            });
+        }
+
+        function guardarEstadoEnServidor() {
+            if (!db || !roomCode) return;
+            db.ref(`orquesta_rooms/${roomCode}`).set(window.state);
+        }
+
+        function elegirRol(role) {
+            activeRole = role;
+            document.getElementById('roleScreen').classList.add('hidden');
+            document.getElementById('instrumentScreen').classList.add('hidden');
+            document.getElementById('btnExitRole').classList.remove('hidden');
+
+            const roleBadge = document.getElementById('roleBadge');
+            roleBadge.classList.remove('hidden');
+
+            document.getElementById('directorPanel').classList.add('hidden');
+            document.getElementById('musicianPanel').classList.add('hidden');
+            document.getElementById('projectorPanel').classList.add('hidden');
+            document.getElementById('btnDirectorMenu').classList.add('hidden');
+
+            if (role === 'director') {
+                document.getElementById('directorPanel').classList.remove('hidden');
+                document.getElementById('btnDirectorMenu').classList.remove('hidden');
+                roleBadge.textContent = "DIRECTOR";
+                roleBadge.className = "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider";
+                cerrarFormularioIngreso();
+            } else if (role === 'musician') {
+                document.getElementById('musicianPanel').classList.remove('hidden');
+                roleBadge.textContent = `MÚSICO: ${selectedInstrument}`;
+                roleBadge.className = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider";
+                generarListaMusicoManual();
+            } else if (role === 'projector') {
+                document.getElementById('projectorPanel').classList.remove('hidden');
+                roleBadge.textContent = "PROYECTOR / CANTORES";
+                roleBadge.className = "bg-sky-500/10 text-sky-400 border border-sky-500/20 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider";
+            }
+
+            renderApp();
+        }
+
+        function abrirSelectorInstrumento() {
+            document.getElementById('roleScreen').classList.add('hidden');
+            document.getElementById('instrumentScreen').classList.remove('hidden');
+        }
+
+        function confirmarInstrumento() {
+            selectedInstrument = document.getElementById('instrumentSelector').value;
+            document.getElementById('musicianInstrumentSelector').value = selectedInstrument;
+            document.getElementById('musicianWaitLabel').textContent = selectedInstrument;
+            elegirRol('musician');
+        }
+
+        function salirAlMenuRoles() {
+            activeRole = null;
+            document.getElementById('roleScreen').classList.remove('hidden');
+            document.getElementById('btnExitRole').classList.add('hidden');
+            document.getElementById('roleBadge').classList.add('hidden');
+
+            document.getElementById('directorPanel').classList.add('hidden');
+            document.getElementById('musicianPanel').classList.add('hidden');
+            document.getElementById('projectorPanel').classList.add('hidden');
+            document.getElementById('btnDirectorMenu').classList.add('hidden');
+        }
+
+        function toggleDirectorMenu() {
+            const sidebar = document.getElementById('directorSidebar');
+            sidebar.classList.toggle('-translate-x-full');
+        }
+
+        function toggleMusicianMenu() {
+            const menu = document.getElementById('musicianMenu');
+            menu.classList.toggle('translate-x-full');
+        }
+
+        function renderApp() {
+            if (!activeRole) return;
+
+            if (activeRole === 'director') {
+                renderDirectorRepertorioActivo();
+                renderDirectorBiblioteca();
+                renderDirectorControlTransmision();
+                renderMonitoresDirector();
+            } else if (activeRole === 'musician') {
+                renderMusicoPantalla();
+            } else if (activeRole === 'projector') {
+                renderProyectorPantalla();
+            }
+
+            lucide.createIcons();
+        }
+
+        function renderDirectorRepertorioActivo() {
+            const container = document.getElementById('sundaySetlist');
+            container.innerHTML = '';
+
+            if (window.state.activeSet.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 border border-dashed border-slate-850 rounded-2xl p-4 text-slate-500 text-xs">
+                        <i data-lucide="music-4" class="w-8 h-8 mx-auto mb-2 opacity-40"></i>
+                        <p class="font-bold">Repertorio de este Domingo Vacío</p>
+                        <p class="text-[10px] text-slate-600 mt-1">Abre el menú (☰) de arriba, ve a tu Biblioteca y añade los himnos de hoy.</p>
+                    </div>`;
+                return;
+            }
+
+            window.state.activeSet.forEach((id, index) => {
+                const himno = window.state.songs[id];
+                if (!himno) return;
+
+                const isCurrentlyTransmitting = (id === window.state.liveState.songId);
+
+                const card = document.createElement('div');
+                card.className = `px-3 py-2 rounded-xl border transition flex items-center justify-between gap-2 ${isCurrentlyTransmitting ? 'bg-indigo-600/10 border-indigo-500/40 text-white' : 'bg-slate-900 border-slate-850 hover:border-slate-800 text-slate-300'}`;
+                
+                card.innerHTML = `
+                    <!-- Controles de Reordenamiento -->
+                    <div class="flex flex-col gap-0.5 flex-shrink-0">
+                        <button onclick="moverCantoEnSetlist(${index}, -1)" class="p-0.5 hover:bg-slate-800 rounded text-slate-500 hover:text-indigo-400 transition ${index === 0 ? 'opacity-20 pointer-events-none' : ''}">
+                            <i data-lucide="chevron-up" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="moverCantoEnSetlist(${index}, 1)" class="p-0.5 hover:bg-slate-800 rounded text-slate-500 hover:text-indigo-400 transition ${index === window.state.activeSet.length - 1 ? 'opacity-20 pointer-events-none' : ''}">
+                            <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Información del Himno -->
+                    <div class="flex-grow min-w-0 pr-1">
+                        <h4 class="font-bold text-xs truncate">${himno.titulo}</h4>
+                    </div>
+                    
+                    <!-- Acciones -->
+                    <div class="flex gap-1.5 flex-shrink-0">
+                        <button onclick="transmitirHimno('${id}')" class="text-[9px] font-black px-3 py-1.5 rounded-lg transition ${isCurrentlyTransmitting ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg' : 'bg-indigo-600/10 hover:bg-indigo-600 text-indigo-400 hover:text-white'}">
+                            ${isCurrentlyTransmitting ? 'AL AIRE' : 'TRANSMITIR'}
+                        </button>
+                        <button onclick="quitarDeDomingo('${id}')" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-lg transition" title="Quitar de este domingo">
+                            <i data-lucide="calendar-minus" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>`;
+                container.appendChild(card);
+            });
+        }
+
+        function moverCantoEnSetlist(posicionActual, direccion) {
+            const nuevaPosicion = posicionActual + direccion;
+            
+            // Validar límites de la lista
+            if (nuevaPosicion < 0 || nuevaPosicion >= window.state.activeSet.length) return;
+            
+            // Intercambiar elementos localmente
+            const elemento = window.state.activeSet.splice(posicionActual, 1)[0];
+            window.state.activeSet.splice(nuevaPosicion, 0, elemento);
+            
+            // Sincronizar inmediatamente a Firebase
+            guardarEstadoEnServidor();
+            mostrarToast("Lista reordenada exitosamente");
+        }
+
+        function renderDirectorBiblioteca() {
+            const container = document.getElementById('libraryList');
+            const searchVal = document.getElementById('librarySearchInput').value.toLowerCase();
+            container.innerHTML = '';
+
+            const ids = Object.keys(window.state.songs);
+            const filtrados = ids.filter(id => window.state.songs[id].titulo.toLowerCase().includes(searchVal));
+
+            if (filtrados.length === 0) {
+                container.innerHTML = `<p class="text-[10px] text-slate-600 text-center py-6">Biblioteca vacía o sin coincidencias</p>`;
+                return;
+            }
+
+            filtrados.forEach(id => {
+                const himno = window.state.songs[id];
+                const estaEnDomingo = window.state.activeSet.includes(id);
+
+                const item = document.createElement('div');
+                item.className = "p-2 rounded-lg bg-slate-950 border border-slate-850 flex justify-between items-center";
+                
+                item.innerHTML = `
+                    <div class="min-w-0 flex-grow pr-1.5">
+                        <h5 class="font-bold text-[11px] text-slate-300 truncate">${himno.titulo}</h5>
+                    </div>
+                    <div class="flex gap-1">
+                        <button onclick="toggleDomingo('${id}')" class="p-1 rounded-md border text-[9px] font-bold ${estaEnDomingo ? 'bg-emerald-950/40 border-emerald-900 text-emerald-400' : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-white'}">
+                            ${estaEnDomingo ? 'Domingo ✓' : '+ Domingo'}
+                        </button>
+                        <button onclick="cargarEditarHimno('${id}')" class="p-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-md text-slate-400 hover:text-white transition">
+                            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>`;
+                container.appendChild(item);
+            });
+        }
+
+        function renderDirectorControlTransmision() {
+            const container = document.getElementById('liveVerseControlList');
+            const activeId = window.state.liveState.songId;
+            const activeHimno = window.state.songs[activeId];
+
+            const titleEl = document.getElementById('liveActiveSongTitle');
+            const subtitleEl = document.getElementById('liveActiveSongSubtitle');
+
+            if (!activeHimno) {
+                titleEl.textContent = "Ningún himno transmitiendo";
+                subtitleEl.textContent = "Selecciona un himno del repertorio de hoy y pulsa TRANSMITIR.";
+                container.innerHTML = `
+                    <div class="col-span-1 md:col-span-2 text-center py-16 text-slate-600">
+                        <i data-lucide="tv" class="w-12 h-12 mx-auto mb-3 opacity-30"></i>
+                        <p class="text-xs">No hay ningún himno activo transmitiendo en vivo para la orquesta y proyector.</p>
+                    </div>`;
+                return;
+            }
+
+            titleEl.textContent = activeHimno.titulo;
+            subtitleEl.textContent = "Pulsa sobre cualquier parte para actualizar las pantallas de toda la iglesia de forma automática.";
+
+            container.innerHTML = '';
+            const estrofas = activeHimno.letra.split(/\n\s*\n/).map(e => e.trim());
+
+            estrofas.forEach((texto, index) => {
+                const palabras = texto.split(/\s+/).slice(0, 4).join(" ");
+                const esLaEstrofaActiva = (index === window.state.liveState.verseIndex);
+
+                const card = document.createElement('button');
+                card.className = `text-left p-4 rounded-2xl border transition flex flex-col gap-1 w-full h-28 justify-between relative ${esLaEstrofaActiva ? 'bg-indigo-600 border-indigo-500 text-white shadow-xl shadow-indigo-600/15' : 'bg-slate-950 border-slate-850 text-slate-400 hover:border-slate-800 hover:text-slate-200'}`;
+                card.onclick = () => cambiarEstrofaEnVivo(index);
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-center w-full">
+                        <span class="text-[8px] font-black uppercase tracking-widest ${esLaEstrofaActiva ? 'text-indigo-200' : 'text-indigo-400'}">PARTE / ESTROFA ${index + 1}</span>
+                        ${esLaEstrofaActiva ? '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>' : ''}
+                    </div>
+                    <p class="text-xs font-black truncate w-full ${esLaEstrofaActiva ? 'text-white' : 'text-slate-300'}">${palabras}...</p>
+                    <p class="text-[10px] line-clamp-3 italic w-full leading-snug ${esLaEstrofaActiva ? 'text-indigo-100' : 'text-slate-500'}">${texto}</p>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderMonitoresDirector() {
+            const monOrq = document.getElementById('monitorOrquesta');
+            const monProy = document.getElementById('monitorProyector');
+
+            const activeId = window.state.liveState.songId;
+            const activeHimno = window.state.songs[activeId];
+
+            if (activeHimno) {
+                const listInsts = Object.keys(activeHimno.urlsInstrumentos || {});
+                if (listInsts.length > 0) {
+                    const url = activeHimno.urlsInstrumentos[listInsts[0]];
+                    monOrq.innerHTML = `<img src="${url}" class="max-h-full object-contain rounded">`;
+                } else {
+                    monOrq.innerHTML = `<p class="text-[8px] text-slate-600">Sin partituras</p>`;
+                }
+
+                const estrofas = activeHimno.letra.split(/\n\s*\n/).map(e => e.trim());
+                monProy.textContent = estrofas[window.state.liveState.verseIndex] || '---';
+            } else {
+                monOrq.innerHTML = `<i data-lucide="music" class="text-slate-800 w-6 h-6"></i>`;
+                monProy.textContent = 'Sin señal';
+            }
+        }
+
+        function toggleDomingo(id) {
+            const index = window.state.activeSet.indexOf(id);
+            if (index === -1) {
+                window.state.activeSet.push(id);
+                mostrarToast("Añadido al domingo");
+            } else {
+                window.state.activeSet.splice(index, 1);
+                mostrarToast("Quitado del domingo");
+            }
+            guardarEstadoEnServidor();
+        }
+
+        function quitarDeDomingo(id) {
+            const index = window.state.activeSet.indexOf(id);
+            if (index !== -1) {
+                window.state.activeSet.splice(index, 1);
+                mostrarToast("Quitado del domingo");
+                guardarEstadoEnServidor();
+            }
+        }
+
+        function transmitirHimno(id) {
+            window.state.liveState.songId = id;
+            window.state.liveState.verseIndex = 0;
+            mostrarToast("Sincronizando himno en las pantallas...");
+            guardarEstadoEnServidor();
+        }
+
+        function cambiarEstrofaEnVivo(index) {
+            window.state.liveState.verseIndex = index;
+            guardarEstadoEnServidor();
+        }
+
+        function abrirFormularioIngreso() {
+            document.getElementById('formActionTitle').textContent = "Ingresar Nuevo Himno";
+            document.getElementById('formSongId').value = '';
+            document.getElementById('formSongTitle').value = '';
+            document.getElementById('formSongLyrics').value = '';
+            document.getElementById('btnDeleteFormSong').classList.add('hidden');
+
+            listaInstrumentos.forEach(inst => {
+                document.getElementById(`formUrl-${inst}`).value = '';
+            });
+
+            document.getElementById('directorFormView').classList.remove('hidden');
+            toggleDirectorMenu();
+        }
+
+        function cerrarFormularioIngreso() {
+            document.getElementById('directorFormView').classList.add('hidden');
+        }
+
+        function cargarEditarHimno(id) {
+            const himno = window.state.songs[id];
+            if (!himno) return;
+
+            document.getElementById('formActionTitle').textContent = "Editar Himno";
+            document.getElementById('formSongId').value = himno.id;
+            document.getElementById('formSongTitle').value = himno.titulo;
+            document.getElementById('formSongLyrics').value = himno.letra;
+            document.getElementById('btnDeleteFormSong').classList.remove('hidden');
+
+            listaInstrumentos.forEach(inst => {
+                const input = document.getElementById(`formUrl-${inst}`);
+                if (himno.urlsInstrumentos && himno.urlsInstrumentos[inst]) {
+                    input.value = himno.urlsInstrumentos[inst];
+                } else {
+                    input.value = '';
+                }
+            });
+
+            document.getElementById('directorFormView').classList.remove('hidden');
+            toggleDirectorMenu();
+        }
+
+        function guardarHimno() {
+            const id = document.getElementById('formSongId').value.trim() || 'himno_' + Date.now();
+            const titulo = document.getElementById('formSongTitle').value.trim();
+            const letra = document.getElementById('formSongLyrics').value.trim();
+
+            if (!titulo || !letra) {
+                mostrarToast("Falta rellenar título o letra del himno.");
+                return;
+            }
+
+            const urlsInstrumentos = {};
+            listaInstrumentos.forEach(inst => {
+                const val = document.getElementById(`formUrl-${inst}`).value.trim();
+                if (val) urlsInstrumentos[inst] = val;
+            });
+
+            window.state.songs[id] = { id, titulo, letra, urlsInstrumentos };
+            
+            mostrarToast("Sincronizando Himno en la nube...");
+            guardarEstadoEnServidor();
+            cerrarFormularioIngreso();
+        }
+
+        function eliminarHimnoForm() {
+            const id = document.getElementById('formSongId').value;
+            if (id && confirm("¿Deseas eliminar este himno permanentemente?")) {
+                delete window.state.songs[id];
+                
+                const domIndex = window.state.activeSet.indexOf(id);
+                if (domIndex !== -1) window.state.activeSet.splice(domIndex, 1);
+
+                if (window.state.liveState.songId === id) {
+                    window.state.liveState.songId = "";
+                    window.state.liveState.verseIndex = 0;
+                }
+
+                mostrarToast("Himno eliminado.");
+                guardarEstadoEnServidor();
+                cerrarFormularioIngreso();
+            }
+        }
+
+        function buscarEnBiblioteca() {
+            renderDirectorBiblioteca();
+        }
+
+
+        // ==================== OPERACIONES DEL MÚSICO ====================
+        function setSincronizacionMusico(sync) {
+            isMusicianSyncMode = sync;
+            const btnOn = document.getElementById('btnSyncOn');
+            const btnOff = document.getElementById('btnSyncOff');
+            const manualBox = document.getElementById('manualSongsBox');
+
+            if (sync) {
+                btnOn.className = "bg-emerald-600 text-white text-xs font-bold py-2 rounded-lg transition shadow-md";
+                btnOff.className = "bg-slate-800 hover:bg-slate-750 text-slate-400 text-xs font-bold py-2 rounded-lg transition border border-slate-700";
+                manualBox.classList.add('hidden');
+                manualSelectedSongId = null; 
+                mostrarToast("Sincronizado: Sigues al director");
+            } else {
+                btnOn.className = "bg-slate-800 hover:bg-slate-750 text-slate-400 text-xs font-bold py-2 rounded-lg transition border border-slate-700";
+                btnOff.className = "bg-emerald-600 text-white text-xs font-bold py-2 rounded-lg transition shadow-md";
+                manualBox.classList.remove('hidden');
+                mostrarToast("Modo Libre: Explora la lista manualmente");
+                generarListaMusicoManual();
+            }
+            renderMusicoPantalla();
+        }
+
+        function cambiarInstrumentoMusico() {
+            selectedInstrument = document.getElementById('musicianInstrumentSelector').value;
+            const label = document.getElementById('musicianWaitLabel');
+            if (label) label.textContent = selectedInstrument;
+            mostrarToast("Atril de instrumento actualizado");
+            toggleMusicianMenu();
+            renderMusicoPantalla();
+        }
+
+        function generarListaMusicoManual() {
+    const container = document.getElementById('musicianManualList');
+    container.innerHTML = '';
+    
+    const ids = Object.keys(window.state.songs);
+    if (ids.length === 0) {
+        container.innerHTML = `<p class="text-[9px] text-slate-600 text-center py-2">Sin himnos cargados</p>`;
+        return;
+    }
+
+    ids.forEach(id => {
+        const himno = window.state.songs[id];
+        // Intentamos obtener la primera imagen de partitura para mostrarla
+        const primeraUrl = (himno.urlsInstrumentos && Object.keys(himno.urlsInstrumentos).length > 0) 
+                       ? Object.values(himno.urlsInstrumentos)[0] : '';
+        
+        const card = document.createElement('div');
+        card.className = `p-2 rounded-xl border transition mb-3 ${manualSelectedSongId === id ? 'bg-emerald-950/40 border-emerald-500' : 'bg-slate-900 border-slate-800'}`;
+        
+        card.innerHTML = `
+            ${primeraUrl ? `<img src="${primeraUrl}" class="himno-card-img mb-2" onclick="seleccionarHimnoMusico('${id}')">` : 
+                           `<div class="w-full h-24 bg-slate-800 flex items-center justify-center mb-2 rounded-lg cursor-pointer" onclick="seleccionarHimnoMusico('${id}')"><i data-lucide="music" class="w-8 h-8 text-slate-600"></i></div>`}
+            <p class="text-[10px] font-bold text-center truncate text-slate-200">${himno.titulo}</p>
+        `;
+        container.appendChild(card);
+    });
+    lucide.createIcons();
+}
+
         function renderMusicoPantalla() {
             if (activeRole !== 'musician') return;
 
+            const songId = isMusicianSyncMode ? window.state.liveState.songId : manualSelectedSongId;
+            const himno = window.state.songs[songId];
+
             const waitBox = document.getElementById('musicianWaitText');
-            const contentWrapper = document.getElementById('musicianContentWrapper');
-            const singleImg = document.getElementById('musicianSheetImg');
-            const libreScroll = document.getElementById('musicianLibreScroll');
-            const musicianPanel = document.getElementById('musicianPanel');
+            const img = document.getElementById('musicianSheetImg');
 
-            musicianPanel.classList.remove('hidden');
+            const waitLabel = document.getElementById('musicianWaitLabel');
+            if (waitLabel) {
+                waitLabel.textContent = selectedInstrument || "--";
+            }
 
-            if (isMusicianSyncMode) {
-                contentWrapper.classList.remove('hidden');
-                singleImg.classList.remove('hidden');
-                libreScroll.classList.add('hidden');
-                
-                const himno = window.state.songs[window.state.liveState.songId];
-                if (himno && himno.urlsInstrumentos && himno.urlsInstrumentos[selectedInstrument]) {
+            if (himno) {
+                const url = (himno.urlsInstrumentos && himno.urlsInstrumentos[selectedInstrument]) ? himno.urlsInstrumentos[selectedInstrument] : '';
+                if (url) {
                     waitBox.classList.add('hidden');
-                    singleImg.src = himno.urlsInstrumentos[selectedInstrument];
+                    img.classList.remove('hidden');
+                    
+                    if (img.src !== url) {
+                        img.src = url;
+                    }
                 } else {
-                    singleImg.classList.add('hidden');
+                    img.classList.add('hidden');
+                    img.src = ""; 
                     waitBox.classList.remove('hidden');
+                    waitBox.innerHTML = `
+                        <i data-lucide="music-3" class="w-12 h-12 text-slate-800 mx-auto mb-3"></i>
+                        <p class="font-bold text-slate-300 text-lg">${himno.titulo}</p>
+                        <p class="text-xs text-slate-500 mt-1">No hay partitura cargada para <strong>${selectedInstrument}</strong>.</p>
+                        <p class="text-[9px] text-slate-600 mt-2">Pídele al director que ingrese el enlace de partitura para tu instrumento.</p>
+                    `;
                 }
             } else {
-                waitBox.classList.add('hidden');
-                singleImg.classList.add('hidden');
-                contentWrapper.classList.remove('hidden');
-                libreScroll.classList.remove('hidden');
-                libreScroll.innerHTML = ''; 
-
-                window.state.activeSet.forEach(id => {
-                    const himno = window.state.songs[id];
-                    if (himno && himno.urlsInstrumentos && himno.urlsInstrumentos[selectedInstrument]) {
-                        const img = document.createElement('img');
-                        img.src = himno.urlsInstrumentos[selectedInstrument];
-                        img.className = "w-full mb-12 border-b-4 border-slate-800 pb-12";
-                        libreScroll.appendChild(img);
-                    }
-                });
+                img.classList.add('hidden');
+                img.src = "";
+                waitBox.classList.remove('hidden');
+                
+                if (!isMusicianSyncMode) {
+                    waitBox.innerHTML = `
+                        <i data-lucide="library" class="w-16 h-16 text-slate-800 mx-auto mb-4"></i>
+                        <p class="font-bold text-slate-400 text-lg">Modo Libre Activo</p>
+                        <p class="text-xs text-slate-600 mt-2">Selecciona un canto de la lista del menú lateral para estudiar tu partitura sin alterar las pantallas generales.</p>
+                    `;
+                } else {
+                    waitBox.innerHTML = `
+                        <i data-lucide="music-3" class="w-16 h-16 text-slate-800 mx-auto mb-4 animate-bounce"></i>
+                        <p class="font-bold text-slate-400 text-lg">Atril Virtual Activo</p>
+                        <p class="text-xs text-slate-600 mt-2">Coloca tu dispositivo en tu atril. La partitura de <strong class="text-emerald-400">${selectedInstrument || '--'}</strong> aparecerá tan pronto como el director inicie el himno.</p>
+                    `;
+                }
             }
             lucide.createIcons();
         }
 
-        // Lógica del Proyector Integrada (La versión que sí funcionaba)
+        function cambiarZoom(amount) {
+            currentMusicianZoom += amount;
+            if (currentMusicianZoom < 0.5) currentMusicianZoom = 0.5;
+            if (currentMusicianZoom > 3) currentMusicianZoom = 3;
+            document.getElementById('musicianSheetImg').style.transform = `scale(${currentMusicianZoom})`;
+        }
+
+        function restaurarZoom() {
+            currentMusicianZoom = 1;
+            document.getElementById('musicianSheetImg').style.transform = 'scale(1)';
+        }
+
+
+        // ==================== OPERACIONES DEL PROYECTOR ====================
         function renderProyectorPantalla() {
             if (activeRole !== 'projector') return;
 
             const container = document.getElementById('projectionText');
-            const panel = document.getElementById('projectorPanel');
-            
-            panel.classList.remove('hidden');
             if (window.state.liveState.blackout) {
                 container.classList.add('blackout');
             } else {
                 container.classList.remove('blackout');
             }
+            const liveState = window.state.liveState;
+            const himno = window.state.songs[liveState.songId];
 
-            const himno = window.state.songs[window.state.liveState.songId];
             if (himno && himno.letra) {
                 const estrofas = himno.letra.split(/\n\s*\n/).map(e => e.trim());
-                container.textContent = estrofas[window.state.liveState.verseIndex] || '';
+                container.textContent = estrofas[liveState.verseIndex] || '';
+                container.style.fontSize = `${currentProjectorFontSize}px`;
             } else {
                 container.innerHTML = `<span class="text-slate-800 font-light italic text-4xl">OrquestaSIONsync Listo</span>`;
             }
         }
-        
-        // ... (resto de funciones) ...
+
+        function cambiarTamañoProyector(amount) {
+            currentProjectorFontSize += amount;
+            if (currentProjectorFontSize < 18) currentProjectorFontSize = 18;
+            if (currentProjectorFontSize > 150) currentProjectorFontSize = 150;
+            renderProyectorPantalla();
+        }
+
+
+        // ==================== TOAST NOTIFIER ====================
+        function mostrarToast(msg) {
+            const toast = document.getElementById('toast');
+            const text = document.getElementById('toastText');
+            if (!toast || !text) return;
+
+            text.textContent = msg;
+            toast.className = "fixed bottom-6 right-6 z-55 transform translate-y-0 opacity-100 transition-all duration-300 bg-indigo-600 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2.5";
+            
+            setTimeout(() => {
+                toast.className = "fixed bottom-6 right-6 z-55 transform translate-y-20 opacity-0 transition-all duration-300 bg-indigo-600 text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-2.5";
+            }, 3000);
+        }
+function limpiarTodaLaLista() {
+    if (confirm("¿Estás seguro de que deseas borrar toda la lista del repertorio de este domingo?")) {
+        window.state.activeSet = [];
+        guardarEstadoEnServidor();
+        mostrarToast("Lista limpiada correctamente");
+    }
+}
+ function toggleBlackout() {
+            window.state.liveState.blackout = !window.state.liveState.blackout;
+            mostrarToast(window.state.liveState.blackout ? "Pantallas en negro" : "Pantallas encendidas");
+            guardarEstadoEnServidor();
+        }   
+        function seleccionarHimnoMusico(id) {
+            manualSelectedSongId = id;
+            generarListaMusicoManual(); 
+            renderMusicoPantalla();
+            mostrarToast(`Seleccionado: ${window.state.songs[id].titulo}`);
+        }
     </script>
 </body>
 </html>
