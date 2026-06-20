@@ -345,6 +345,19 @@
     </div>
 
     <script>
+// Variable para guardar el banco de partituras
+        let bibliotecaPartituras = [];
+
+        // Función para cargar el archivo JSON
+        async function cargarBaseDePartituras() {
+            try {
+                const response = await fetch('partituras.json');
+                bibliotecaPartituras = await response.json();
+                console.log("¡ÉXITO! Banco de partituras cargado. Total de registros: " + bibliotecaPartituras.length);
+            } catch (e) {
+                console.error("No se pudo cargar partituras.json. Asegúrate de que esté en la misma carpeta.");
+            }
+        }
 const listaInstrumentos = [
     "Flauta",
     "Violín 1",
@@ -415,14 +428,14 @@ const listaInstrumentos = [
             }
         }
 
-        window.addEventListener('load', () => {
+window.addEventListener('load', () => {
+            cargarBaseDePartituras(); // <--- Esta es la línea que debes insertar
             const savedRoom = localStorage.getItem('orchestrasync_room_code');
             if (savedRoom) {
                 document.getElementById('roomCodeInput').value = savedRoom;
             }
             cargarSelectoresDeInstrumentos();
         });
-
         function cargarSelectoresDeInstrumentos() {
             const formContainer = document.getElementById('formInstrumentUrls');
             const instrumentSel = document.getElementById('instrumentSelector');
