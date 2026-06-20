@@ -635,40 +635,40 @@ window.addEventListener('load', () => {
         }
 
         function renderDirectorBiblioteca() {
-            const container = document.getElementById('libraryList');
-            const searchVal = document.getElementById('librarySearchInput').value.toLowerCase();
-            container.innerHTML = '';
+    const container = document.getElementById('libraryList');
+    const searchVal = document.getElementById('librarySearchInput').value.toLowerCase();
+    container.innerHTML = '';
 
-            const ids = Object.keys(window.state.songs);
-            const filtrados = ids.filter(id => window.state.songs[id].titulo.toLowerCase().includes(searchVal));
+    const ids = Object.keys(window.state.songs);
+    const filtrados = ids.filter(id => window.state.songs[id].titulo.toLowerCase().includes(searchVal));
 
-            if (filtrados.length === 0) {
-                container.innerHTML = `<p class="text-[10px] text-slate-600 text-center py-6">Biblioteca vacía o sin coincidencias</p>`;
-                return;
-            }
+    filtrados.forEach(id => {
+        const himno = window.state.songs[id];
+        const estaEnDomingo = window.state.activeSet.includes(id);
+        
+        // Nueva lógica: verificar si tiene letra
+        const sinLetra = !himno.letra || himno.letra.trim() === "";
 
-            filtrados.forEach(id => {
-                const himno = window.state.songs[id];
-                const estaEnDomingo = window.state.activeSet.includes(id);
-
-                const item = document.createElement('div');
-                item.className = "p-2 rounded-lg bg-slate-950 border border-slate-850 flex justify-between items-center";
-                
-                item.innerHTML = `
-                    <div class="min-w-0 flex-grow pr-1.5">
-                        <h5 class="font-bold text-[11px] text-slate-300 truncate">${himno.titulo}</h5>
-                    </div>
-                    <div class="flex gap-1">
-                        <button onclick="toggleDomingo('${id}')" class="p-1 rounded-md border text-[9px] font-bold ${estaEnDomingo ? 'bg-emerald-950/40 border-emerald-900 text-emerald-400' : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-white'}">
-                            ${estaEnDomingo ? 'Domingo ✓' : '+ Domingo'}
-                        </button>
-                        <button onclick="cargarEditarHimno('${id}')" class="p-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-md text-slate-400 hover:text-white transition">
-                            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
-                        </button>
-                    </div>`;
-                container.appendChild(item);
-            });
-        }
+        const item = document.createElement('div');
+        item.className = "p-2 rounded-lg bg-slate-950 border border-slate-850 flex justify-between items-center";
+        
+        item.innerHTML = `
+            <div class="min-w-0 flex-grow pr-1.5">
+                <h5 class="font-bold text-[11px] ${sinLetra ? 'text-amber-500' : 'text-slate-300'} truncate">
+                    ${sinLetra ? '⚠️ ' : ''}${himno.titulo}
+                </h5>
+            </div>
+            <div class="flex gap-1">
+                <button onclick="toggleDomingo('${id}')" class="p-1 rounded-md border text-[9px] font-bold ${estaEnDomingo ? 'bg-emerald-950/40 border-emerald-900 text-emerald-400' : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-white'}">
+                    ${estaEnDomingo ? 'Domingo ✓' : '+'}
+                </button>
+                <button onclick="cargarEditarHimno('${id}')" class="p-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-md text-slate-400 hover:text-white transition">
+                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                </button>
+            </div>`;
+        container.appendChild(item);
+    });
+}
 
         function renderDirectorControlTransmision() {
             const container = document.getElementById('liveVerseControlList');
@@ -925,43 +925,47 @@ window.addEventListener('load', () => {
         }
 
         function renderMusicoPantalla() {
-            if (activeRole !== 'musician') return;
+    if (activeRole !== 'musician') return;
 
-            const waitBox = document.getElementById('musicianWaitText');
-            const contentWrapper = document.getElementById('musicianContentWrapper');
-            const singleImg = document.getElementById('musicianSheetImg');
-            
-            const himno = window.state.songs[window.state.liveState.songId];
-            
-            if (himno && bibliotecaPartituras.length > 0) {
-                const partituraEncontrada = bibliotecaPartituras.find(p => 
-                    p.canto.toLowerCase().trim() === himno.titulo.toLowerCase().trim() && 
-                    p.instrumento.toLowerCase().includes(selectedInstrument.toLowerCase().trim())
-                );
+    const waitBox = document.getElementById('musicianWaitText');
+    const contentWrapper = document.getElementById('musicianContentWrapper');
+    const singleImg = document.getElementById('musicianSheetImg');
+    
+    // 1. Obtener el himno activo
+    const himno = window.state.songs[window.state.liveState.songId];
+    
+    if (himno && bibliotecaPartituras.length > 0) {
+        // 2. Buscamos la partitura. 
+        // Usamos .includes() para buscar el instrumento dentro del nombre completo del JSON
+        const partituraEncontrada = bibliotecaPartituras.find(p => 
+            p.canto.toLowerCase().trim() === himno.titulo.toLowerCase().trim() && 
+            p.instrumento.toLowerCase().includes(selectedInstrument.toLowerCase().trim())
+        );
 
-                if (partituraEncontrada) {
-                    // CASO A: Existe la partitura
-                    waitBox.classList.add('hidden');
-                    singleImg.src = partituraEncontrada.url;
-                    singleImg.classList.remove('hidden');
-                    contentWrapper.classList.remove('hidden');
-                } else {
-                    // CASO B: NO existe, mostramos el mensaje de texto (Sin imágenes)
-                    waitBox.classList.remove('hidden');
-                    waitBox.innerHTML = `
-                        <div class="p-6 bg-slate-900 border border-slate-700 rounded-2xl text-center">
-                            <h3 class="text-white font-bold text-lg">Partitura en espera</h3>
-                            <p class="text-slate-400 text-sm mt-2">
-                                Aún estamos digitalizando este canto para tu instrumento.<br>
-                                Por favor, utiliza el himnario físico por el momento.
-                            </p>
-                        </div>
-                    `;
-                    singleImg.classList.add('hidden');
-                    contentWrapper.classList.remove('hidden'); // Mantenemos visible para que se vea el mensaje
-                }
-            }
+        if (partituraEncontrada) {
+            // CASO A: ¡Partitura encontrada!
+            waitBox.classList.add('hidden');
+            singleImg.src = partituraEncontrada.url; 
+            singleImg.classList.remove('hidden');
+            contentWrapper.classList.remove('hidden');
+            console.log("¡Partitura encontrada automáticamente para:", selectedInstrument, "!");
+        } else {
+            // CASO B: Aún no tenemos esta partitura
+            waitBox.classList.remove('hidden');
+            waitBox.innerHTML = `
+                <div class="p-6 bg-slate-900 border border-slate-700 rounded-2xl text-center">
+                    <h3 class="text-white font-bold text-lg">Partitura en espera</h3>
+                    <p class="text-slate-400 text-sm mt-2">
+                        Aún estamos digitalizando este canto para tu instrumento.<br>
+                        Por favor, utiliza el himnario físico por el momento.
+                    </p>
+                </div>
+            `;
+            singleImg.classList.add('hidden');
+            contentWrapper.classList.remove('hidden');
         }
+    }
+}
 
         function cambiarZoom(amount) {
             currentMusicianZoom += amount;
